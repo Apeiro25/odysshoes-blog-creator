@@ -7,31 +7,28 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export default async function handler(req, res) {
-  console.log("HTTP Method Received: ", req.method); // Debug the HTTP method
+  console.log("Received HTTP Method: ", req.method); // Log the HTTP method received
 
-  // Allow only POST requests
   if (req.method !== 'POST') {
+    console.log("Rejected due to method not being POST");
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { prompt } = req.body;
 
-  // Validate the input
-  if (!prompt || prompt.trim() === "") {
+  if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
 
   try {
-    // Fetch completion from OpenAI
     const completion = await openai.createCompletion({
       model: 'text-davinci-003',
-      prompt: prompt,
+      prompt,
       max_tokens: 1000,
     });
-
     res.status(200).json({ blog: completion.data.choices[0].text });
   } catch (error) {
-    console.error("Error generating blog:", error.response ? error.response.data : error.message);
+    console.error("Error with OpenAI API: ", error);
     res.status(500).json({ error: 'Failed to generate blog' });
   }
 }
