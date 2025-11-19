@@ -3,32 +3,36 @@ import styles from '../styles/Home.module.css';
 import { useState } from 'react';
 
 export default function Home() {
-  const [prompt, setPrompt] = useState('');
-  const [blog, setBlog] = useState('');
+  const [prompt, setPrompt] = useState(''); // State for the current prompt
+  const [blogs, setBlogs] = useState([]);  // State to handle multiple blogs
 
   // Function to handle blog generation
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
+    e.preventDefault(); // Prevent default form submission behavior
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error! Status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Update the blogs list
+      setBlogs((prevBlogs) => [
+        ...prevBlogs,
+        { title: prompt, content: data.blog }, // Each blog has a title and content
+      ]);
+
+      setPrompt(''); // Clear the input field
+    } catch (error) {
+      console.error('Error generating blog:', error);
     }
-
-    const data = await response.json();
-
-    // Update the blogs list
-    setBlogs((prevBlogs) => [...prevBlogs, { title: prompt, content: data.blog }]);
-    setPrompt(''); // Clear the prompt
-  } catch (error) {
-    console.error('Error generating blog:', error);
-  }
-};
+  };
 
   return (
     <div className={styles.container}>
@@ -44,21 +48,24 @@ export default function Home() {
           <textarea
             className={styles.textareaClass}
             placeholder="Enter your prompt here..."
-            rows="10"
+            rows="4"
             cols="50"
-            value={prompt} // Link the textarea input to state
-            onChange={(e) => setPrompt(e.target.value)} // Update state on change
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
           />
-          <button type="submit" className={styles.buttonClass}>Generate Blog</button>
+          <button type="submit" className={styles.buttonClass}>
+            Generate Blog
+          </button>
         </form>
 
-        {/* Conditional rendering to display the generated blog */}
-        {blog && (
-          <div className={styles.blogOutput}>
-            <h2>Generated Blog</h2>
-            <p>{blog}</p>
-          </div>
-        )}
+        <div className={styles.blogList}>
+          {blogs.map((blog, index) => (
+            <div key={index} className={styles.blogItem}>
+              <h2>{blog.title}</h2>
+              <p>{blog.content}</p>
+            </div>
+          ))}
+        </div>
       </main>
 
       <footer className={styles.footer}>
