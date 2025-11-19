@@ -8,14 +8,12 @@ export default function Home() {
 
   // Function to handle blog generation
   const handleSubmit = async (e) => {
-  e.preventDefault(); // Prevents default GET behavior from forms
+  e.preventDefault(); // Prevent default form behavior
   try {
     const response = await fetch('/api/generate', {
-      method: 'POST', // Ensure this is a POST request
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt }), // Send the prompt to the server
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
     });
 
     if (!response.ok) {
@@ -23,7 +21,14 @@ export default function Home() {
     }
 
     const data = await response.json();
-    setBlog(data.blog); // Update the blog state
+
+    // Add the new blog to the list of blogs
+    setBlogs((prevBlogs) => [
+      ...prevBlogs,
+      { title: prompt, content: data.blog },
+    ]);
+
+    setPrompt(''); // Clear the input field
   } catch (error) {
     console.error('Error generating blog:', error);
   }
