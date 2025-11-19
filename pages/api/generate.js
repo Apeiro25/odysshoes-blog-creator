@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     const response = await openai.chat.completions.create({
       model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
     console.log("OpenAI API Response:", response);
