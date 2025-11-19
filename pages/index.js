@@ -8,7 +8,7 @@ export default function Home() {
 
   // Function to handle blog generation
   const handleSubmit = async (e) => {
-  e.preventDefault(); // Prevent default form behavior
+  e.preventDefault();
   try {
     const response = await fetch('/api/generate', {
       method: 'POST',
@@ -22,13 +22,9 @@ export default function Home() {
 
     const data = await response.json();
 
-    // Add the new blog to the list of blogs
-    setBlogs((prevBlogs) => [
-      ...prevBlogs,
-      { title: prompt, content: data.blog },
-    ]);
-
-    setPrompt(''); // Clear the input field
+    // Update the blogs list
+    setBlogs((prevBlogs) => [...prevBlogs, { title: prompt, content: data.blog }]);
+    setPrompt(''); // Clear the prompt
   } catch (error) {
     console.error('Error generating blog:', error);
   }
