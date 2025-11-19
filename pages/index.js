@@ -7,43 +7,44 @@ export default function Home() {
   const [blogs, setBlogs] = useState([]);  // List to store multiple blogs
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default page reload on form submission
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
+  e.preventDefault(); // Prevent default form behavior
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Add the new blog to the blogs array
-      setBlogs((prevBlogs) => [
-        ...prevBlogs,
-        {
-          title: prompt, // Use the prompt as the title
-          metaDescription: 'Meta description placeholder', // Placeholder
-          h1: 'H1 Title Placeholder',
-          intro: 'Introduction placeholder text',
-          subHeadings: {
-            h2: 'H2: Placeholder sub-heading 1',
-            h3: 'H3: Placeholder sub-heading 2',
-            h4: 'H4: Placeholder sub-heading 3',
-            h5: 'H5: Placeholder sub-heading 4',
-            h6: 'H6: Placeholder sub-heading 5',
-          },
-        },
-      ]);
-
-      setPrompt(''); // Clear the input field
-    } catch (error) {
-      console.error('Error generating blog:', error);
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+
+    // Dynamically split the returned blog content
+    const lines = data.blog.split('\n');
+    setBlogs((prevBlogs) => [
+      ...prevBlogs,
+      {
+        title: prompt || "Untitled Blog", // Use the submitted prompt
+        metaDescription: lines[0] || "Generated meta description placeholder",
+        h1: lines[1] || "Generated H1 placeholder",
+        intro: lines[2] || "Generated introduction placeholder",
+        subHeadings: {
+          h2: lines[3] || "H2: Generated sub-heading 1",
+          h3: lines[4] || "H3: Generated sub-heading 2",
+          h4: lines[5] || "H4: Generated sub-heading 3",
+          h5: lines[6] || "H5: Generated sub-heading 4",
+          h6: lines[7] || "H6: Generated sub-heading 5",
+        },
+      },
+    ]);
+
+    setPrompt(''); // Reset the prompt text field
+  } catch (error) {
+    console.error('Error generating blog:', error);
+  }
+};
 
   return (
     <div className={styles.container}>
