@@ -3,12 +3,11 @@ import styles from '../styles/Home.module.css';
 import { useState } from 'react';
 
 export default function Home() {
-  const [prompt, setPrompt] = useState(''); // State for the current prompt
-  const [blogs, setBlogs] = useState([]);  // State to handle multiple blogs
+  const [prompt, setPrompt] = useState(''); // Input prompt for user
+  const [blogs, setBlogs] = useState([]);  // List to store multiple blogs
 
-  // Function to handle blog generation
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault(); // Prevent default page reload on form submission
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -22,10 +21,22 @@ export default function Home() {
 
       const data = await response.json();
 
-      // Update the blogs list
+      // Add the new blog to the blogs array
       setBlogs((prevBlogs) => [
         ...prevBlogs,
-        { title: prompt, content: data.blog }, // Each blog has a title and content
+        {
+          title: prompt, // Use the prompt as the title
+          metaDescription: 'Meta description placeholder', // Placeholder
+          h1: 'H1 Title Placeholder',
+          intro: 'Introduction placeholder text',
+          subHeadings: {
+            h2: 'H2: Placeholder sub-heading 1',
+            h3: 'H3: Placeholder sub-heading 2',
+            h4: 'H4: Placeholder sub-heading 3',
+            h5: 'H5: Placeholder sub-heading 4',
+            h6: 'H6: Placeholder sub-heading 5',
+          },
+        },
       ]);
 
       setPrompt(''); // Clear the input field
@@ -43,26 +54,41 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.titleClass}>Blog Generator</h1>
+        <h1 className={styles.title}>Generate Blogs</h1>
+
         <form onSubmit={handleSubmit}>
           <textarea
             className={styles.textareaClass}
-            placeholder="Enter your prompt here..."
-            rows="4"
+            placeholder="Enter a blog prompt..."
+            rows="5"
             cols="50"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
-          <button type="submit" className={styles.buttonClass}>
-            Generate Blog
-          </button>
+          <button type="submit" className={styles.buttonClass}>Generate</button>
         </form>
 
         <div className={styles.blogList}>
           {blogs.map((blog, index) => (
             <div key={index} className={styles.blogItem}>
-              <h2>{blog.title}</h2>
-              <p>{blog.content}</p>
+              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>1: Title</h2>
+              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.title}</p>
+
+              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>2: Meta Description</h2>
+              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.metaDescription}</p>
+
+              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>3: H1</h2>
+              <p style={{ fontSize: '16px', marginBottom: '8px' }}>{blog.h1}</p>
+
+              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>4: Introduction</h2>
+              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.intro}</p>
+
+              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>5: Sub-headings</h2>
+              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.subHeadings.h2}</p>
+              <p style={{ fontSize: '13px', marginBottom: '8px' }}>{blog.subHeadings.h3}</p>
+              <p style={{ fontSize: '12px', marginBottom: '8px' }}>{blog.subHeadings.h4}</p>
+              <p style={{ fontSize: '11px', marginBottom: '8px' }}>{blog.subHeadings.h5}</p>
+              <p style={{ fontSize: '10px', marginBottom: '8px' }}>{blog.subHeadings.h6}</p>
             </div>
           ))}
         </div>
