@@ -33,9 +33,6 @@ export default function Home() {
         subHeadings: {
           h2: lines[3] || "H2: Generated sub-heading 1",
           h3: lines[4] || "H3: Generated sub-heading 2",
-          h4: lines[5] || "H4: Generated sub-heading 3",
-          h5: lines[6] || "H5: Generated sub-heading 4",
-          h6: lines[7] || "H6: Generated sub-heading 5",
         },
       },
     ]);
