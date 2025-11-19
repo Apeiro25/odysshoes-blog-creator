@@ -11,10 +11,10 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>Blog Generator</h1>
-        <p className={styles.description}>Enter a prompt to generate your blog</p>
+        <h1 className={styles.titleClass}>Blog Generator</h1>
+        <p className={styles.descriptionClass}>Enter a prompt to generate your blog</p>
         <form>
-          <textarea placeholder="Enter your prompt here..." rows="10" cols="50" />
+          <textarea className={styles.textareaClass} placeholder="Enter your prompt here..." rows="10" cols="50" />
           <button type="submit" className={styles.buttonClass}>Generate Blog</button>
         </form>
       </main>

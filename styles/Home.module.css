@@ -17,16 +17,16 @@
   align-items: center;
 }
 
-title {
+.titleClass {
   font-size: 4rem;
   text-align: center;
 }
 
-description {
+.descriptionClass {
   text-align: center;
 }
 
-textarea {
+.textareaClass {
   width: 100%;
   max-width: 600px;
   padding: 10px;
