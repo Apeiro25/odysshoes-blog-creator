@@ -8,28 +8,27 @@ export default function Home() {
 
   // Function to handle blog generation
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    try {
-      console.log("Submitting prompt:", prompt);
-      const response = await fetch('/api/generate', {
-        method: 'POST', // Ensure this is a POST request
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
+  e.preventDefault(); // Prevent default form submission
+  try {
+    const response = await fetch('/api/generate', { // API call to the backend
+      method: 'POST', // Ensure this is a POST request
+      headers: {
+        'Content-Type': 'application/json', // Indicate request content type
+      },
+      body: JSON.stringify({ prompt }), // Send the prompt as JSON
+    });
 
-      // Handle server errors
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const data = await response.json(); // Parse JSON response
-      setBlog(data.blog); // Set the blog response in state
-    } catch (error) {
-      console.error('Error generating blog:', error);
+    // Handle errors
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status}`);
     }
-  };
+
+    const data = await response.json(); // Retrieve the response from the backend
+    setBlog(data.blog); // Set generated blog content
+  } catch (error) {
+    console.error('Error generating blog:', error);
+  }
+};
 
   return (
     <div className={styles.container}>
