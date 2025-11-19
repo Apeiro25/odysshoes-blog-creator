@@ -1,34 +1,32 @@
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY, // Ensure the API key is loaded
-});
-
-const openai = new OpenAIApi(configuration);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Load API key
 
 export default async function handler(req, res) {
-  console.log("Received HTTP Method: ", req.method); // Log the HTTP method received
+  console.log("HTTP Method:", req.method);
 
   if (req.method !== 'POST') {
-    console.log("Rejected due to method not being POST");
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { prompt } = req.body;
 
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Prompt is required and must be a string' });
   }
 
   try {
-    const completion = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt,
+    console.log("Sending request to OpenAI...");
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
+      messages: [{ role: 'user', content: prompt }],
       max_tokens: 1000,
     });
-    res.status(200).json({ blog: completion.data.choices[0].text });
+
+    console.log("OpenAI API Response:", response);
+    res.status(200).json({ blog: response.choices[0].message.content });
   } catch (error) {
-    console.error("Error with OpenAI API: ", error);
+    console.error("OpenAI API Error:", error);
     res.status(500).json({ error: 'Failed to generate blog' });
   }
 }
