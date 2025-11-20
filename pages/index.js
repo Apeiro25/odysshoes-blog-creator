@@ -78,7 +78,16 @@ export default function Home() {
             <strong>Meta Description:</strong> {content.metaDescription}
           </p>
           <h3>{content.h1}</h3>
-          <p>{content.mainContent}</p>
+          <div>
+  {content.mainContent.map((section, index) => (
+    <div key={index}>
+      <h2>{section.heading}</h2>
+      {section.content.map((item, idx) => (
+        <p key={idx}>{item}</p>
+      ))}
+    </div>
+  ))}
+</div>
           <div>
             <h3>FAQs:</h3>
             <ul>
