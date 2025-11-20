@@ -35,7 +35,7 @@ Format the output as a JSON object with keys: title, metaDescription, h1, mainCo
     const response = await openai.chat.completions.create({
       model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2000,
+      max_tokens: 5000,
     });
 
     console.log("OpenAI API Response:", response);

@@ -89,15 +89,13 @@ export default function Home() {
   ))}
 </div>
           <div>
-            <h2>Frequenlty Asked Questions:</h2>
-            <ul>
+            <h2>Frequently Asked Questions:</h2>
               {content.faqs.map((faq, idx) => (
                 <li key={idx}>
                   <h3>{faq.question}</h3> <br />
                   <p>{faq.answer}</p>
                 </li>
               ))}
-            </ul>
           </div>
           <div>
   <h2>{content.outro.heading}</h2>
