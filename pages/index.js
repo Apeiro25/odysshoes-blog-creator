@@ -78,6 +78,7 @@ export default function Home() {
             <strong>Meta Description:</strong> {content.metaDescription}
           </p>
           <h2>{content.h1}</h2>
+          {content.intro && <p>{content.intro}</p>}
           <div>
   {content.mainContent.map((section, index) => (
     <div key={index}>

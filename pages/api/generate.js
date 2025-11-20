@@ -23,12 +23,13 @@ Your response should include:
 1. Title
 2. Meta Description
 3. H1
-4. Main Content: Structure the content into H2 sections. Each H2 can include:
+4. Generate intro paragraph for the blog should be 3-5 sentences long.
+5. Main Content: Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points (for lists)
    - Numbered lists (for sequential or hierarchical points)
-5. FAQs (at least 3-5 questions with answers)
-6. Generate a outro which H2 and paragraph concise conclusion for the blog.
+6. FAQs (at least 3-5 questions with answers)
+7. Generate a outro which H2 and paragraph concise conclusion for the blog.
 Format the output as a JSON object with keys: title, metaDescription, h1, mainContent (an array of { heading, content: [paragraphs, bullet points, lists] }), faqs (an array of { question, answer }), outro.
 `;
 
