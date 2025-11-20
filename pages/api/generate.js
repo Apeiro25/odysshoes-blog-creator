@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     2. Meta Description
     3. H1
     4. Main Content
-    5. FAQs (at least 3 questions with answers)
+    5. FAQs (at least 3-5 questions with answers)
     6. Outro.
     Format the output as a JSON object with keys: title, metaDescription, h1, mainContent, faqs (an array of { question, answer }), outro.
     `;
