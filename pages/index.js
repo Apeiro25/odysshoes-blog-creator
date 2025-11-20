@@ -1,101 +1,101 @@
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
-import { useState } from 'react';
+import React, { useState } from "react";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState(''); // Input prompt for user
-  const [blogs, setBlogs] = useState([]);  // List to store multiple blogs
+  const [keywords, setKeywords] = useState("");
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-  e.preventDefault(); // Prevent default form behavior
-  try {
-    const response = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
+  const generateBlog = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setContent(null);
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Dynamically split the returned blog content
-    const lines = data.blog.split('\n');
-    setBlogs((prevBlogs) => [
-      ...prevBlogs,
-      {
-        title: prompt || "Untitled Blog", // Use the submitted prompt
-        metaDescription: lines[0] || "Generated meta description placeholder",
-        h1: lines[1] || "Generated H1 placeholder",
-        intro: lines[2] || "Generated introduction placeholder",
-        subHeadings: {
-          h2: lines[3] || "H2: Generated sub-heading 1",
-          h3: lines[4] || "H3: Generated sub-heading 2",
-          h4: lines[5] || "H4: Generated sub-heading 3",
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      },
-    ]);
+        body: JSON.stringify({ keywords }),
+      });
 
-    setPrompt(''); // Reset the prompt text field
-  } catch (error) {
-    console.error('Error generating blog:', error);
-  }
-};
+      if (!response.ok) {
+        throw new Error("Failed to generate blog. Please try again.");
+      }
+
+      const data = await response.json();
+      setContent(data.blog); // The structured JSON blog data
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Blog Generator</title>
-        <meta name="description" content="Generate blogs using OpenAI" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+      <h1>Blog Creator</h1>
+      <form onSubmit={generateBlog} style={{ marginBottom: "1.5rem" }}>
+        <input
+          type="text"
+          placeholder="Enter keywords e.g. SEO tips"
+          value={keywords}
+          onChange={(e) => setKeywords(e.target.value)}
+          style={{
+            padding: "0.5rem",
+            width: "300px",
+            marginRight: "1rem",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+          }}
+        />
+        <button
+          type="submit"
+          style={{
+            padding: "0.5rem 1rem",
+            backgroundColor: "#0070f3",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+          disabled={loading}
+        >
+          {loading ? "Generating..." : "Generate Blog"}
+        </button>
+      </form>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>Generate Blogs</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <form onSubmit={handleSubmit}>
-          <textarea
-            className={styles.textareaClass}
-            placeholder="Enter a blog prompt..."
-            rows="5"
-            cols="50"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <button type="submit" className={styles.buttonClass}>Generate</button>
-        </form>
-
-        <div className={styles.blogList}>
-          {blogs.map((blog, index) => (
-            <div key={index} className={styles.blogItem}>
-              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>1: Title</h2>
-              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.title}</p>
-
-              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>2: Meta Description</h2>
-              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.metaDescription}</p>
-
-              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>3: H1</h2>
-              <p style={{ fontSize: '16px', marginBottom: '8px' }}>{blog.h1}</p>
-
-              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>4: Introduction</h2>
-              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.intro}</p>
-
-              <h2 style={{ fontSize: '20px', marginBottom: '10px' }}>5: Sub-headings</h2>
-              <p style={{ fontSize: '14px', marginBottom: '8px' }}>{blog.subHeadings.h2}</p>
-              <p style={{ fontSize: '13px', marginBottom: '8px' }}>{blog.subHeadings.h3}</p>
-              <p style={{ fontSize: '12px', marginBottom: '8px' }}>{blog.subHeadings.h4}</p>
-              <p style={{ fontSize: '11px', marginBottom: '8px' }}>{blog.subHeadings.h5}</p>
-              <p style={{ fontSize: '10px', marginBottom: '8px' }}>{blog.subHeadings.h6}</p>
-            </div>
-          ))}
+      {content && (
+        <div>
+          <h2>{content.title}</h2>
+          <p>
+            <strong>Meta Description:</strong> {content.metaDescription}
+          </p>
+          <h3>{content.h1}</h3>
+          <p>{content.mainContent}</p>
+          <div>
+            <h3>FAQs:</h3>
+            <ul>
+              {content.faqs.map((faq, idx) => (
+                <li key={idx}>
+                  <strong>Q:</strong> {faq.question} <br />
+                  <strong>A:</strong> {faq.answer}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3>Outro:</h3>
+            <p>{content.outro}</p>
+          </div>
         </div>
-      </main>
-
-      <footer className={styles.footer}>
-        Powered by OpenAI
-      </footer>
+      )}
     </div>
   );
 }
