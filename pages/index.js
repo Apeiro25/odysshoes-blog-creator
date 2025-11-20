@@ -73,11 +73,11 @@ export default function Home() {
 
       {content && (
         <div>
-          <h2>{content.title}</h2>
+          <h1>{content.title}</h1>
           <p>
             <strong>Meta Description:</strong> {content.metaDescription}
           </p>
-          <h3>{content.h1}</h3>
+          <h2>{content.h1}</h2>
           <div>
   {content.mainContent.map((section, index) => (
     <div key={index}>
@@ -89,12 +89,12 @@ export default function Home() {
   ))}
 </div>
           <div>
-            <h3>Frequenlty Asked Questions:</h3>
+            <h2>Frequenlty Asked Questions:</h2>
             <ul>
               {content.faqs.map((faq, idx) => (
                 <li key={idx}>
-                  <strong>Q:</strong> {faq.question} <br />
-                  <strong>A:</strong> {faq.answer}
+                  <h3>{faq.question}</h3> <br />
+                  <p>{faq.answer}</p>
                 </li>
               ))}
             </ul>
