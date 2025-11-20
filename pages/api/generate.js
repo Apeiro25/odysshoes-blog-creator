@@ -28,7 +28,7 @@ Your response should include:
    - Bullet points (for lists)
    - Numbered lists (for sequential or hierarchical points)
 5. FAQs (at least 3-5 questions with answers)
-6. Outro.
+6. Outro: Generate a H2 and paragraph concise conclusion for the blog.
 Format the output as a JSON object with keys: title, metaDescription, h1, mainContent (an array of { heading, content: [paragraphs, bullet points, lists] }), faqs (an array of { question, answer }), outro.
 `;
 

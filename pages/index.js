@@ -89,7 +89,7 @@ export default function Home() {
   ))}
 </div>
           <div>
-            <h3>FAQs:</h3>
+            <h3>Frequenlty Asked Questions:</h3>
             <ul>
               {content.faqs.map((faq, idx) => (
                 <li key={idx}>
@@ -100,9 +100,9 @@ export default function Home() {
             </ul>
           </div>
           <div>
-            <h3>Outro:</h3>
-            <p>{content.outro}</p>
-          </div>
+  <h2>{content.outro.heading}</h2>
+  <p>{content.outro.paragraph}</p>
+</div>
         </div>
       )}
     </div>
