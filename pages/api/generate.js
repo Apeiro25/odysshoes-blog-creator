@@ -24,12 +24,12 @@ Your response should include:
 2. Meta Description (should contain the keywords)
 3. H1 (should contain the keywords)
 4. Generate an intro paragraph for the blog (5-6 sentences long).
-5. Main Content (strictly contain 500 words): Structure the content into H2 sections. Each H2 can include:
+5. Main Content (strictly contain 1300 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs (should be 4-6 sentences long)
-   - Bullet points (for lists)
+   - Bullet points (for lists, features, advantages, etc. no using "-" or "*" just bullets)
    - Numbered lists (for sequential or hierarchical points)
-6. FAQs (at least 3-5 questions with answers)
-7. Generate an outro that includes (should be 5-6 sentences long):
+6. FAQs (at least 5 questions with answers)
+7. Generate an outro that includes (should be 5-6 sentences long with 60-70 words):
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog.
 
