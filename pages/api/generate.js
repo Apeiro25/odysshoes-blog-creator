@@ -18,16 +18,19 @@ export default async function handler(req, res) {
   try {
     console.log("Sending request to OpenAI...");
     const prompt = `
-    Create a blog based on the following keywords: "${keywords}".
-    Your response should include:
-    1. Title
-    2. Meta Description
-    3. H1
-    4. Main Content
-    5. FAQs (at least 3-5 questions with answers)
-    6. Outro.
-    Format the output as a JSON object with keys: title, metaDescription, h1, mainContent, faqs (an array of { question, answer }), outro.
-    `;
+Create a blog based on the following keywords: "${keywords}".
+Your response should include:
+1. Title
+2. Meta Description
+3. H1
+4. Main Content: Structure the content into H2 sections. Each H2 can include:
+   - Paragraphs
+   - Bullet points (for lists)
+   - Numbered lists (for sequential or hierarchical points)
+5. FAQs (at least 3-5 questions with answers)
+6. Outro.
+Format the output as a JSON object with keys: title, metaDescription, h1, mainContent (an array of { heading, content: [paragraphs, bullet points, lists] }), faqs (an array of { question, answer }), outro.
+`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
