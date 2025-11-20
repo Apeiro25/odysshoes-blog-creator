@@ -29,7 +29,7 @@ Your response should include:
    - Bullet points (for lists)
    - Numbered lists (for sequential or hierarchical points)
 6. FAQs (at least 3-5 questions with answers)
-7. Generate an outro that includes (should be 4-6 sentences long):
+7. Generate an outro that includes (should be 5-6 sentences long):
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog.
 
