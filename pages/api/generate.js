@@ -23,14 +23,28 @@ Your response should include:
 1. Title
 2. Meta Description
 3. H1
-4. Generate intro paragraph for the blog should be 3-5 sentences long.
+4. Generate an intro paragraph for the blog (3-5 sentences long).
 5. Main Content: Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points (for lists)
    - Numbered lists (for sequential or hierarchical points)
 6. FAQs (at least 3-5 questions with answers)
-7. Generate a outro which H2 and paragraph concise conclusion for the blog.
-Format the output as a JSON object with keys: title, metaDescription, h1, mainContent (an array of { heading, content: [paragraphs, bullet points, lists] }), faqs (an array of { question, answer }), outro.
+7. Generate an outro that includes:
+   - A heading (H2) summarizing the conclusion.
+   - A concise paragraph providing a conclusion for the blog.
+
+Format the output as a JSON object with keys: 
+{
+  title: string,
+  metaDescription: string,
+  h1: string,
+  intro: string,
+  mainContent: [
+    { heading: string, content: [string (paragraph), string (bullet), string (numbered)] }
+  ],
+  faqs: [{ question: string, answer: string }],
+  outro: { heading: string, paragraph: string }
+}
 `;
 
     const response = await openai.chat.completions.create({
