@@ -20,16 +20,16 @@ export default async function handler(req, res) {
     const prompt = `
 Create a blog based on the following keywords: "${keywords}".
 Your response should include:
-1. Title
-2. Meta Description
-3. H1
-4. Generate an intro paragraph for the blog (3-5 sentences long).
-5. Main Content: Structure the content into H2 sections. Each H2 can include:
-   - Paragraphs
+1. Title (should contain the keywords)
+2. Meta Description (should contain the keywords)
+3. H1 (should contain the keywords)
+4. Generate an intro paragraph for the blog (5-6 sentences long).
+5. Main Content (strictly contain 500 words): Structure the content into H2 sections. Each H2 can include:
+   - Paragraphs (should be 4-6 sentences long)
    - Bullet points (for lists)
    - Numbered lists (for sequential or hierarchical points)
 6. FAQs (at least 3-5 questions with answers)
-7. Generate an outro that includes:
+7. Generate an outro that includes (should be 4-6 sentences long):
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog.
 
