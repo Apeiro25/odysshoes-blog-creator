@@ -102,18 +102,18 @@ export default function Home() {
     })}
   </ul>
 
-  {/* Render Numbered List Without <ul> */}
-  {section.content.map((item, idx) => {
-    if (item.type === "numbered") {
-      return (
-        <div key={idx}>
-          <span style={{ fontWeight: "bold", marginRight: "0.5rem" }}>{idx + 1}.</span>
-          {item.text}
-        </div>
-      );
-    }
-    return null;
-  })}
+ {/* Render Numbered List */}
+{section.content.map((item, idx) => {
+  if (item.type === "numbered") {
+    return (
+      <div key={idx} style={{ paddingLeft: "1.5rem", marginBottom: "0.5rem" }}>
+        <span style={{ fontWeight: "normal", marginRight: "0.5rem" }}>{idx + 1}.</span>
+        {item.text}
+      </div>
+    );
+  }
+  return null;
+})}
 </div>
   ))}
 </div>
