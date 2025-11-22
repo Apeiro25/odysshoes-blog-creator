@@ -81,20 +81,25 @@ export default function Home() {
           {content.intro && <p>{content.intro}</p>}
           <div>
   {content.mainContent.map((section, index) => (
-    <div key={index} style={{ marginBottom: "1.5rem" }}>
-      <h2>{section.heading}</h2>
-      <ul>
-        {section.content.map((item, idx) => {
-          if (item.type === "paragraph") {
-            return <p key={idx}>{item.text}</p>;
-          } else if (item.type === "bullet") {
-            return <li key={idx} style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>{item.text}</li>;
-          } else if (item.type === "numbered") {
-            return <li key={idx} style={{ listStyleType: "decimal", paddingLeft: "1.5rem" }}>{item.text}</li>;
-          }
-        })}
-      </ul>
-    </div>
+ <div key={index} style={{ marginBottom: "1.5rem" }}>
+  <h2>{section.heading}</h2>
+  {section.content.map((item, idx) => {
+    if (item.type === "paragraph") {
+      return <p key={idx} style={{ paddingLeft: "0" }}>{item.text}</p>; // Render paragraphs outside <ul>.
+    }
+    return null; // Separate paragraphs completely from the list.
+  })}
+  <ul>
+    {section.content.map((item, idx) => {
+      if (item.type === "bullet") {
+        return <li key={idx} style={{ listStyleType: "disc" }}>{item.text}</li>;
+      } else if (item.type === "numbered") {
+        return <li key={idx} style={{ listStyleType: "decimal" }}>{item.text}</li>;
+      }
+      return null; // Skip non-list content.
+    })}
+  </ul>
+</div>
   ))}
 </div>
           <div>

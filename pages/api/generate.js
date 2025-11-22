@@ -24,7 +24,7 @@ Your response should include:
 2. Meta Description
 3. H1
 4. Generate an intro paragraph for the blog (3-5 sentences long).
-5. Main Content: Structure the content into H2 sections. Each H2 can include:
+5. Main Content (Strictly 1200 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points (prefix with '-')
    - Numbered lists (prefix with '1.', '2.', '3.')
