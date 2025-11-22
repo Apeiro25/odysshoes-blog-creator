@@ -81,11 +81,19 @@ export default function Home() {
           {content.intro && <p>{content.intro}</p>}
           <div>
   {content.mainContent.map((section, index) => (
-    <div key={index}>
+    <div key={index} style={{ marginBottom: "1.5rem" }}>
       <h2>{section.heading}</h2>
-      {section.content.map((item, idx) => (
-        <p key={idx}>{item}</p>
-      ))}
+      <ul style={{ paddingLeft: "1.5rem" }}>
+        {section.content.map((item, idx) => {
+          if (item.type === "paragraph") {
+            return <p key={idx}>{item.text}</p>;
+          } else if (item.type === "bullet") {
+            return <li key={idx} style={{ listStyleType: "disc" }}>{item.text}</li>;
+          } else if (item.type === "numbered") {
+            return <li key={idx} style={{ listStyleType: "decimal" }}>{item.text}</li>;
+          }
+        })}
+      </ul>
     </div>
   ))}
 </div>
