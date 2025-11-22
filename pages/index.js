@@ -86,12 +86,13 @@ export default function Home() {
       <ul style={{ paddingLeft: "1.5rem" }}>
         {section.content.map((item, idx) => {
           if (item.type === "paragraph") {
-            return <p key={idx}>{item.text}</p>;
+            return <p key={idx} style={{ paddingLeft: "0" }}>{item.text}</p>; // No list styles for paragraphs
           } else if (item.type === "bullet") {
             return <li key={idx} style={{ listStyleType: "disc" }}>{item.text}</li>;
           } else if (item.type === "numbered") {
             return <li key={idx} style={{ listStyleType: "decimal" }}>{item.text}</li>;
           }
+          return null; // Fallback for unmatched item types
         })}
       </ul>
     </div>
