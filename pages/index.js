@@ -83,22 +83,37 @@ export default function Home() {
   {content.mainContent.map((section, index) => (
  <div key={index} style={{ marginBottom: "1.5rem" }}>
   <h2>{section.heading}</h2>
+
+  {/* Render Paragraphs */}
   {section.content.map((item, idx) => {
     if (item.type === "paragraph") {
-      return <p key={idx} style={{ paddingLeft: "0" }}>{item.text}</p>; // Render paragraphs outside <ul>.
+      return <p key={idx} style={{ paddingLeft: "0" }}>{item.text}</p>;
     }
-    return null; // Separate paragraphs completely from the list.
+    return null;
   })}
+
+  {/* Render Bullet Points */}
   <ul>
     {section.content.map((item, idx) => {
       if (item.type === "bullet") {
         return <li key={idx} style={{ listStyleType: "disc" }}>{item.text}</li>;
-      } else if (item.type === "numbered") {
-        return <li key={idx} style={{ listStyleType: "decimal" }}>{item.text}</li>;
       }
-      return null; // Skip non-list content.
+      return null;
     })}
   </ul>
+
+  {/* Render Numbered List Without <ul> */}
+  {section.content.map((item, idx) => {
+    if (item.type === "numbered") {
+      return (
+        <div key={idx}>
+          <span style={{ fontWeight: "bold", marginRight: "0.5rem" }}>{idx + 1}.</span>
+          {item.text}
+        </div>
+      );
+    }
+    return null;
+  })}
 </div>
   ))}
 </div>
