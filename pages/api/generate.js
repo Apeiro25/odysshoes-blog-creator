@@ -23,12 +23,12 @@ Your response should include:
 1. Title
 2. Meta Description
 3. H1
-4. Generate an intro paragraph for the blog (3-5 sentences long).
-5. Main Content (Strictly 1200 words): Structure the content into H2 sections. Each H2 can include:
+4. Generate an intro paragraph for the blog (5 sentences long).
+5. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points (prefix with '-')
    - Numbered lists (prefix with '1.', '2.', '3.')
-6. FAQs (at least 3-5 questions with answers)
+6. FAQs (at least 5 questions with answers)
 7. Generate an outro that includes:
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog.
@@ -50,7 +50,7 @@ Format the output as a JSON object with keys:
     const response = await openai.chat.completions.create({
       model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2500,
+      max_tokens: 5000,
     });
 
     console.log("OpenAI API Response:", response);
