@@ -96,7 +96,7 @@ export default function Home() {
   <ul>
     {section.content.map((item, idx) => {
       if (item.type === "bullet") {
-        return <li key={idx} style={{ listStyleType: "disc" }}>{item.text}</li>;
+        return <li key={idx} style={{ listStyleType: "disc", marginBottom: "0.3rem" }}>{item.text}</li>;
       }
       return null;
     })}
@@ -106,7 +106,7 @@ export default function Home() {
 {section.content.map((item, idx) => {
   if (item.type === "numbered") {
     return (
-      <div key={idx} style={{ paddingLeft: "1.5rem", marginBottom: "0.5rem" }}>
+      <div key={idx} style={{ paddingLeft: "1.5rem", marginBottom: "0.3rem" }}>
         <span style={{ fontWeight: "normal", marginRight: "0.5rem" }}>{idx + 1}.</span>
         {item.text}
       </div>
