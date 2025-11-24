@@ -31,7 +31,7 @@ Your response should include:
 6. FAQs (at least 5 questions with answers)
 7. Generate an outro that includes:
    - A heading (H2) summarizing the conclusion.
-   - A concise paragraph providing a conclusion for the blog.
+   - A concise paragraph providing a conclusion for the blog (5 sentences long).
 
 Format the output as a JSON object with keys: 
 {
