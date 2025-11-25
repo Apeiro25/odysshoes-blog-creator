@@ -1,22 +1,28 @@
-import { OpenAI } from 'openai';
+import { OpenAI } from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Load API keys
 
 export default async function handler(req, res) {
   console.log("HTTP Method:", req.method);
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { keywords, shopifyToken, shopifyShop } = req.body;
+  const { keywords, shopifyToken, shopifyShop, blogId } = req.body;
 
-  if (!keywords || typeof keywords !== 'string') {
-    return res.status(400).json({ error: 'Keywords are required and must be a string.' });
+  if (!keywords || typeof keywords !== "string") {
+    return res
+      .status(400)
+      .json({ error: "Keywords are required and must be a string." });
   }
 
-  if (!shopifyToken || !shopifyShop) {
-    return res.status(400).json({ error: 'Shopify token and Shopify shop are required.' });
+  if (!shopifyToken || !shopifyShop || !blogId) {
+    return res
+      .status(400)
+      .json({
+        error: "Shopify token, Shopify shop, and blog ID are required.",
+      });
   }
 
   try {
@@ -50,45 +56,49 @@ Format the output as a JSON object with keys:
   outro: { heading: string, paragraph: string }
 }`;
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
       max_tokens: 5000,
     });
 
     const result = JSON.parse(response.choices[0].message.content);
 
-    console.log("Publishing blog to Shopify...");
+    console.log("Publishing blog post to Shopify...");
 
-    const shopifyResponse = await fetch(`https://${shopifyShop}/admin/api/2023-01/blogs.json`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': shopifyToken,
-      },
-      body: JSON.stringify({
-        blog: {
-          title: result.title,
-          body_html:
-            `<h1>${result.h1}</h1><p>${result.intro}</p>` +
-            result.mainContent
-              .map(
-                (section) =>
-                  `<h2>${section.heading}</h2>` +
-                  section.content
-                    .map((c) =>
-                      c.type === 'paragraph'
-                        ? `<p>${c.text}</p>`
-                        : c.type === 'bullet'
-                        ? `<ul><li>${c.text}</li></ul>`
-                        : `<ol><li>${c.text}</li></ol>`
-                    )
-                    .join('')
-              )
-              .join('') +
-            `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
+    const shopifyResponse = await fetch(
+      `https://${shopifyShop}/admin/api/2023-01/articles.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": shopifyToken,
         },
-      }),
-    });
+        body: JSON.stringify({
+          article: {
+            title: result.title,
+            body_html:
+              `<h1>${result.h1}</h1><p>${result.intro}</p>` +
+              result.mainContent
+                .map(
+                  (section) =>
+                    `<h2>${section.heading}</h2>` +
+                    section.content
+                      .map((c) =>
+                        c.type === "paragraph"
+                          ? `<p>${c.text}</p>`
+                          : c.type === "bullet"
+                          ? `<ul><li>${c.text}</li></ul>`
+                          : `<ol><li>${c.text}</li></ol>`
+                      )
+                      .join("")
+                )
+                .join("") +
+              `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
+            blog_id: 86316744766, // Blog ID determines where the post is published
+          },
+        }),
+      }
+    );
 
     if (!shopifyResponse.ok) {
       const errorDetails = await shopifyResponse.json();
@@ -97,7 +107,13 @@ Format the output as a JSON object with keys:
 
     const shopifyResult = await shopifyResponse.json();
 
-    res.status(200).json({ success: true, blog: result, shopifyResponse: shopifyResult });
+    res
+      .status(200)
+      .json({
+        success: true,
+        blog: result,
+        shopifyResponse: shopifyResult,
+      });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to generate or publish blog content." });
