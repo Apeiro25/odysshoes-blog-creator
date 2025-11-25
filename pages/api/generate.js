@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   // Extract parameters from request body
-  const { keywords, shopifyToken, shopifyShop, blogId } = req.body;
+  const { keywords, shopifyToken, shopifyShop, blogId, author } = req.body;
 
   // Debugging: Log the incoming request parameters
   console.log("Request Body Received:", {
@@ -108,7 +108,7 @@ Format the output as a JSON object with keys:
       `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
     blog_id: blogId,
     meta_description: result.metaDescription, // Add meta description here
-    author: HubertMorris, // Dynamically set author name
+    author: author, // Dynamically set author name
   }
 }),
       }

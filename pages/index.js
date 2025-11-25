@@ -10,6 +10,7 @@ export default function Home() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [author, setAuthor] = useState('');
 
   const generateBlog = async (e) => {
     e.preventDefault();
@@ -111,6 +112,21 @@ export default function Home() {
             marginBottom: '1rem',
           }}
         />
+        {/* Author Name Input */}
+<input
+  type="text"
+  placeholder="Enter Author Name"
+  value={author}
+  onChange={(e) => setAuthor(e.target.value)}
+  style={{
+    padding: '0.5rem',
+    width: '300px',
+    marginRight: '1rem',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    marginBottom: '1rem',
+  }}
+/>
 
         <button
           type="submit"
