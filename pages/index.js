@@ -6,6 +6,7 @@ export default function Home() {
   const [keywords, setKeywords] = useState('');
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyShop, setShopifyShop] = useState('');
+  const [blogId, setBlogId] = useState(''); // New state for blogId
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,8 +17,8 @@ export default function Home() {
     setError('');
     setContent(null);
 
-    if (!shopifyToken || !shopifyShop) {
-      setError('Shopify Token and Shopify Shop are required.');
+    if (!shopifyToken || !shopifyShop || !blogId) { // Validate blogId
+      setError('Shopify Token, Shopify Shop, and Blog ID are required.');
       setLoading(false);
       return;
     }
@@ -28,7 +29,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ keywords, shopifyToken, shopifyShop }),
+        body: JSON.stringify({ keywords, shopifyToken, shopifyShop, blogId }), // Include blogId
       });
 
       if (!response.ok) {
@@ -92,6 +93,22 @@ export default function Home() {
             marginRight: '1rem',
             border: '1px solid #ccc',
             borderRadius: '4px',
+          }}
+        />
+
+        {/* Blog ID Input */}
+        <input
+          type="text"
+          placeholder="Enter Blog ID"
+          value={blogId}
+          onChange={(e) => setBlogId(e.target.value)} // Set blogId
+          style={{
+            padding: '0.5rem',
+            width: '300px',
+            marginRight: '1rem',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            marginBottom: '1rem',
           }}
         />
 
