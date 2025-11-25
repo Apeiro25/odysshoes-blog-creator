@@ -94,28 +94,31 @@ Format the output as a JSON object with keys:
                 )
                 .join("") +
               `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
-            blog_id: 86316744766, // Blog ID determines where the post is published
+            blog_id: blogId, // Blog ID determines where the post is published
           },
         }),
       }
     );
 
     if (!shopifyResponse.ok) {
-      const errorDetails = await shopifyResponse.json();
-      return res.status(shopifyResponse.status).json({ error: errorDetails });
+      const errorDetails = await shopifyResponse.json(); // Log detailed error info
+      console.error("Shopify API Error:", errorDetails);
+      return res
+        .status(shopifyResponse.status) // Return the same status from Shopify API
+        .json({ error: errorDetails });
     }
 
     const shopifyResult = await shopifyResponse.json();
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        blog: result,
-        shopifyResponse: shopifyResult,
-      });
+    res.status(200).json({
+      success: true,
+      blog: result,
+      shopifyResponse: shopifyResult,
+    });
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ error: "Failed to generate or publish blog content." });
+    res
+      .status(500)
+      .json({ error: "Failed to generate or publish blog content." });
   }
 }
