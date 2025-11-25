@@ -89,7 +89,7 @@ Format the output as a JSON object with keys:
   article: {
     title: result.title,
     body_html:
-      `<h1>${result.h1}</h1><p>${result.intro}</p>` +
+      `<p>${result.intro}</p>` +
       result.mainContent
         .map(
           (section) =>

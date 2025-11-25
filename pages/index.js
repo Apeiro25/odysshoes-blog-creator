@@ -30,7 +30,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ keywords, shopifyToken, shopifyShop, blogId }), // Include blogId
+        body: JSON.stringify({ keywords, shopifyToken, shopifyShop, blogId, author }), // Include blogId
       });
 
       if (!response.ok) {
@@ -155,7 +155,7 @@ export default function Home() {
           {content.intro && <p>{content.intro}</p>}
           <div>
             {content.mainContent.map((section, index) => (
-              <div key={index} style={{ marginBottom: '1.5rem' }}>
+              <div key={index}>
                 <h2>{section.heading}</h2>
                 {section.content.map((item, idx) => {
                   if (item.type === 'paragraph') {
