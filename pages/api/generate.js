@@ -9,10 +9,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { keywords } = req.body;
+  const { keywords, shopifyToken, shopifyShop } = req.body;
 
   if (!keywords || typeof keywords !== 'string') {
     return res.status(400).json({ error: 'Keywords are required and must be a string.' });
+  }
+
+  if (!shopifyToken || !shopifyShop) {
+    return res.status(400).json({ error: 'Shopify token and Shopify shop are required.' });
   }
 
   try {
@@ -44,22 +48,58 @@ Format the output as a JSON object with keys:
   ],
   faqs: [{ question: string, answer: string }],
   outro: { heading: string, paragraph: string }
-}
-`;
-
+}`;
     const response = await openai.chat.completions.create({
-      model: 'gpt-4', // Use 'gpt-4' or 'text-davinci-003'
+      model: 'gpt-4',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 5000,
     });
 
-    console.log("OpenAI API Response:", response);
-    const result = response.choices[0].message.content;
-    console.log("OpenAI Response:", result);
+    const result = JSON.parse(response.choices[0].message.content);
 
-    res.status(200).json({ blog: JSON.parse(result) });
+    console.log("Publishing blog to Shopify...");
+
+    const shopifyResponse = await fetch(`https://${shopifyShop}/admin/api/2023-01/blogs.json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Access-Token': shopifyToken,
+      },
+      body: JSON.stringify({
+        blog: {
+          title: result.title,
+          body_html:
+            `<h1>${result.h1}</h1><p>${result.intro}</p>` +
+            result.mainContent
+              .map(
+                (section) =>
+                  `<h2>${section.heading}</h2>` +
+                  section.content
+                    .map((c) =>
+                      c.type === 'paragraph'
+                        ? `<p>${c.text}</p>`
+                        : c.type === 'bullet'
+                        ? `<ul><li>${c.text}</li></ul>`
+                        : `<ol><li>${c.text}</li></ol>`
+                    )
+                    .join('')
+              )
+              .join('') +
+            `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
+        },
+      }),
+    });
+
+    if (!shopifyResponse.ok) {
+      const errorDetails = await shopifyResponse.json();
+      return res.status(shopifyResponse.status).json({ error: errorDetails });
+    }
+
+    const shopifyResult = await shopifyResponse.json();
+
+    res.status(200).json({ success: true, blog: result, shopifyResponse: shopifyResult });
   } catch (error) {
-    console.error("OpenAI API Error:", error);
-    res.status(500).json({ error: "Failed to generate blog content." });
+    console.error("Error:", error);
+    res.status(500).json({ error: "Failed to generate or publish blog content." });
   }
 }
