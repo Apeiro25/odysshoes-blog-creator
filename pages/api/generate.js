@@ -9,8 +9,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Extract parameters from request body
   const { keywords, shopifyToken, shopifyShop, blogId } = req.body;
 
+  // Debugging: Log the incoming request parameters
+  console.log("Request Body Received:", {
+    keywords,
+    shopifyToken,
+    shopifyShop,
+    blogId,
+  });
+
+  // Validate required parameters
   if (!keywords || typeof keywords !== "string") {
     return res
       .status(400)
@@ -18,11 +28,14 @@ export default async function handler(req, res) {
   }
 
   if (!shopifyToken || !shopifyShop || !blogId) {
-    return res
-      .status(400)
-      .json({
-        error: "Shopify token, Shopify shop, and blog ID are required.",
-      });
+    console.error("Missing required parameters:", {
+      shopifyToken,
+      shopifyShop,
+      blogId,
+    });
+    return res.status(400).json({
+      error: "Shopify token, Shopify shop, and blog ID are required.",
+    });
   }
 
   try {
@@ -103,9 +116,7 @@ Format the output as a JSON object with keys:
     if (!shopifyResponse.ok) {
       const errorDetails = await shopifyResponse.json(); // Log detailed error info
       console.error("Shopify API Error:", errorDetails);
-      return res
-        .status(shopifyResponse.status) // Return the same status from Shopify API
-        .json({ error: errorDetails });
+      return res.status(shopifyResponse.status).json({ error: errorDetails });
     }
 
     const shopifyResult = await shopifyResponse.json();
@@ -117,8 +128,6 @@ Format the output as a JSON object with keys:
     });
   } catch (error) {
     console.error("Error:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to generate or publish blog content." });
+    res.status(500).json({ error: "Failed to generate or publish blog content." });
   }
 }
