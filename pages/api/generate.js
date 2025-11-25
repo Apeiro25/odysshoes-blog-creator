@@ -45,14 +45,13 @@ Create a blog based on the following keywords: "${keywords}".
 Your response should include:
 1. Title
 2. Meta Description
-3. H1
-4. Generate an intro paragraph for the blog (5 sentences long).
-5. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
+3. Generate an intro paragraph for the blog (5 sentences long).
+4. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points (prefix with '-')
    - Numbered lists (prefix with '1.', '2.', '3.')
-6. FAQs (at least 5 questions with answers)
-7. Generate an outro that includes:
+5. FAQs (at least 5 questions with answers)
+6. Generate an outro that includes:
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog (5 sentences long).
 
@@ -87,29 +86,31 @@ Format the output as a JSON object with keys:
           "X-Shopify-Access-Token": shopifyToken,
         },
         body: JSON.stringify({
-          article: {
-            title: result.title,
-            body_html:
-              `<h1>${result.h1}</h1><p>${result.intro}</p>` +
-              result.mainContent
-                .map(
-                  (section) =>
-                    `<h2>${section.heading}</h2>` +
-                    section.content
-                      .map((c) =>
-                        c.type === "paragraph"
-                          ? `<p>${c.text}</p>`
-                          : c.type === "bullet"
-                          ? `<ul><li>${c.text}</li></ul>`
-                          : `<ol><li>${c.text}</li></ol>`
-                      )
-                      .join("")
-                )
-                .join("") +
-              `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
-            blog_id: blogId, // Blog ID determines where the post is published
-          },
-        }),
+  article: {
+    title: result.title,
+    body_html:
+      `<h1>${result.h1}</h1><p>${result.intro}</p>` +
+      result.mainContent
+        .map(
+          (section) =>
+            `<h2>${section.heading}</h2>` +
+            section.content
+              .map((c) =>
+                c.type === "paragraph"
+                  ? `<p>${c.text}</p>`
+                  : c.type === "bullet"
+                  ? `<ul><li>${c.text}</li></ul>`
+                  : `<ol><li>${c.text}</li></ol>`
+              )
+              .join("")
+        )
+        .join("") +
+      `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
+    blog_id: blogId,
+    meta_description: result.metaDescription, // Add meta description here
+    author: defaultAuthor, // Dynamically set author name
+  }
+}),
       }
     );
 
