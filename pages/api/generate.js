@@ -108,7 +108,7 @@ Format the output as a JSON object with keys:
       `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
     blog_id: blogId,
     meta_description: result.metaDescription, // Add meta description here
-    author: defaultAuthor, // Dynamically set author name
+    author: HubertMorris, // Dynamically set author name
   }
 }),
       }
