@@ -53,6 +53,10 @@ export default function Home() {
     localStorage.setItem('savedBlogs', JSON.stringify(updatedBlogs));
   };
 
+
+
+
+
   const generateBlog = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -65,22 +69,30 @@ export default function Home() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ keywords, shopifyToken, shopifyShop, blogId, author }),
-      });
+    const keywordList = keywords.split(',').map((kw) => kw.trim()); // Split and trim keywords
+    const generatedBlogs = []; // Store generated blogs
 
-      if (!response.ok) {
-        throw new Error('Failed to generate blog.');
+    try {
+      for (const keyword of keywordList) {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ keywords: keyword, shopifyToken, shopifyShop, blogId, author }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate blog for keyword: ${keyword}`);
+        }
+
+        const data = await response.json();
+        generatedBlogs.push(data.blog); // Add generated blog to the list
       }
 
-      const data = await response.json();
-      setContent(data.blog); // Display generated data
-      saveBlog(data.blog); // Save to local storage
+      setContent(generatedBlogs); // Display all generated blogs
+      setSavedBlogs((prev) => [...prev, ...generatedBlogs]); // Save them in local state
+      localStorage.setItem('savedBlogs', JSON.stringify([...savedBlogs, ...generatedBlogs])); // Update local storage
     } catch (err) {
       setError(err.message);
     } finally {
