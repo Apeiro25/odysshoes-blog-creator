@@ -112,7 +112,7 @@ export default function Home() {
             marginBottom: '1rem',
           }}
         />
-        {/* Author Name Input */}
+        {/* Author Name Input. */}
 <input
   type="text"
   placeholder="Enter Author Name"
