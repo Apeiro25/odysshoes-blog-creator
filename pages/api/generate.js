@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     console.log("Sending request to OpenAI...");
     const prompt = `
 Create a blog based on the following keywords: "${keywords}".
+When given the keywords, you should scan the top 5 search results on Google and create a comprehensive blog post that covers the topic in depth and average word count of the top 5 results.
 Your response should include:
 1. Title
 2. Meta Description
@@ -89,23 +90,30 @@ Format the output as a JSON object with keys:
   article: {
     title: result.title,
     body_html:
-      `<p>${result.intro}</p>` +
-      result.mainContent
-        .map(
-          (section) =>
-            `<h2>${section.heading}</h2>` +
-            section.content
-              .map((c) =>
-                c.type === "paragraph"
-                  ? `<p>${c.text}</p>`
-                  : c.type === "bullet"
-                  ? `<ul><li>${c.text}</li></ul>`
-                  : `<ol><li>${c.text}</li></ol>`
-              )
-              .join("")
-        )
-        .join("") +
-      `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
+  `<p>${result.intro}</p>` +
+  result.mainContent
+    .map((section) => {
+      let numberedItems = section.content
+        .filter((c) => c.type === "numbered")
+        .map((c) => `<li>${c.text}</li>`)
+        .join("");
+
+      return (
+        `<h2>${section.heading}</h2>` +
+        section.content
+          .map((c) =>
+            c.type === "paragraph"
+              ? `<p>${c.text}</p>`
+              : c.type === "bullet"
+              ? `<ul><li>${c.text}</li></ul>`
+              : ""
+          )
+          .join("") +
+        (numberedItems ? `<ol>${numberedItems}</ol>` : "") // Wrap all numbered items
+      );
+    })
+    .join("") + // Closing the .join() for result.mainContent.map()
+  `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
     blog_id: blogId,
     meta_description: result.metaDescription, // Add meta description here
     author: author, // Dynamically set author name
