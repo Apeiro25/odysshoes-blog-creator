@@ -89,7 +89,7 @@ Format the output as a JSON object with keys:
         body: JSON.stringify({
   article: {
     title: result.title,
-    body_html:
+   body_html:
   `<p>${result.intro}</p>` +
   result.mainContent
     .map((section) => {
@@ -109,10 +109,25 @@ Format the output as a JSON object with keys:
               : ""
           )
           .join("") +
-        (numberedItems ? `<ol>${numberedItems}</ol>` : "") // Wrap all numbered items
+        (numberedItems ? `<ol>${numberedItems}</ol>` : "")
       );
     })
-    .join("") + // Closing the .join() for result.mainContent.map()
+    .join("") +
+  
+  // Add FAQs before the outro
+  (result.faqs && result.faqs.length > 0
+    ? `<h2>Frequently Asked Questions:</h2>` +
+      result.faqs
+        .map(
+          (faq) =>
+            `<div>` +
+            `<h3>${faq.question}</h3>` +
+            `<p>${faq.answer}</p>` +
+            `</div>`
+        )
+        .join("")
+    : "") +
+
   `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
     blog_id: blogId,
     meta_description: result.metaDescription, // Add meta description here
