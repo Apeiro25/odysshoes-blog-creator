@@ -117,6 +117,7 @@ Format the output as a JSON object with keys:
     if (!shopifyResponse.ok) {
       const errorDetails = await shopifyResponse.json(); // Log detailed error info
       console.error("Shopify API Error:", errorDetails);
+      console.log("Meta Description Sent:", result.metaDescription);
       return res.status(shopifyResponse.status).json({ error: errorDetails });
     }
 
