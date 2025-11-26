@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import styles from '../styles/Home.module.css';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function Home() {
   const [keywords, setKeywords] = useState('');
@@ -11,6 +11,14 @@ export default function Home() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedBlogs, setSavedBlogs] = useState([]);
+  const [showBlogs, setShowBlogs] = useState(false);
+
+  useEffect(() => {
+    // Load saved blogs from local storage
+    const blogs = JSON.parse(localStorage.getItem('savedBlogs')) || [];
+    setSavedBlogs(blogs);
+  }, []);
 
   const inputStyle = {
     padding: '0.5rem',
@@ -39,6 +47,12 @@ export default function Home() {
     backgroundColor: '#f5f5f5',
   };
 
+  const saveBlog = (blog) => {
+    const updatedBlogs = [...savedBlogs, blog];
+    setSavedBlogs(updatedBlogs);
+    localStorage.setItem('savedBlogs', JSON.stringify(updatedBlogs));
+  };
+
   const generateBlog = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -61,11 +75,12 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate or publish the blog.');
+        throw new Error('Failed to generate blog.');
       }
 
       const data = await response.json();
       setContent(data.blog); // Display generated data
+      saveBlog(data.blog); // Save to local storage
     } catch (err) {
       setError(err.message);
     } finally {
@@ -143,7 +158,42 @@ export default function Home() {
         {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
         {content && (
           <div style={{ marginTop: '2rem' }}>
-            <h2>Blog Generated Successfully!</h2>
+            <h2>Generated Blog:</h2>
+            <h3>{content.title}</h3>
+            <p>{content.body_html}</p>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowBlogs(!showBlogs)}
+          style={{
+            marginTop: '1rem',
+            padding: '0.5rem 1rem',
+            backgroundColor: '#28a745',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            width: '100%',
+            fontWeight: 'bold',
+          }}
+        >
+          {showBlogs ? 'Hide Published Blogs' : 'View Published Blogs'}
+        </button>
+
+        {showBlogs && (
+          <div style={{ marginTop: '2rem' }}>
+            <h3>Saved Blogs</h3>
+            {savedBlogs.length > 0 ? (
+              savedBlogs.map((blog, index) => (
+                <div key={index} style={{ marginBottom: '1.5rem', borderBottom: '1px solid #ccc' }}>
+                  <h4>{blog.title}</h4>
+                  <p dangerouslySetInnerHTML={{ __html: blog.body_html }} />
+                </div>
+              ))
+            ) : (
+              <p>No blogs saved yet.</p>
+            )}
           </div>
         )}
       </div>
