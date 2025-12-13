@@ -56,6 +56,7 @@ Your response should include:
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog (5 sentences long).
 7. Optional: If relevant to the website odysshoes.com, which is a customizable shoe store, include a section on how the topic relates to customizable shoes.
+8. Do not include mentioning of brands names or their products.
 
 Format the output as a JSON object with keys: 
 {
