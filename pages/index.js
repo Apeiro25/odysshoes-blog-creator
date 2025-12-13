@@ -53,9 +53,13 @@ export default function Home() {
     localStorage.setItem('savedBlogs', JSON.stringify(updatedBlogs));
   };
 
-
-
-
+  const generateSlug = (title) => {
+  return title
+    .toLowerCase() // Convert to lowercase
+    .trim() // Remove whitespace from both ends
+    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric characters with dashes
+    .replace(/^-+|-+$/g, ''); // Remove leading or trailing dashes
+};
 
   const generateBlog = async (e) => {
     e.preventDefault();
@@ -197,15 +201,24 @@ export default function Home() {
           <div style={{ marginTop: '2rem' }}>
             <h3>Saved Blogs</h3>
             {savedBlogs.length > 0 ? (
-              savedBlogs.map((blog, index) => (
-                <div key={index} style={{ marginBottom: '1.5rem', borderBottom: '1px solid #ccc' }}>
-                  <h4>{blog.title}</h4>
-                  <p dangerouslySetInnerHTML={{ __html: blog.body_html }} />
-                </div>
-              ))
-            ) : (
-              <p>No blogs saved yet.</p>
-            )}
+  savedBlogs.map((blog, index) => (
+    <div key={index} style={{ marginBottom: '1.5rem', borderBottom: '1px solid #ccc' }}>
+      <h4>
+        <a
+          href={`https://odysshoes.com/blogs/news/${generateSlug(blog.title)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#0070f3', textDecoration: 'none' }}
+        >
+          {blog.title}
+        </a>
+      </h4>
+      <p dangerouslySetInnerHTML={{ __html: blog.body_html }} />
+    </div>
+  ))
+) : (
+  <p>No blogs saved yet.</p>
+)}
           </div>
         )}
       </div>
