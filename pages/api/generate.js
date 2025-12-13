@@ -42,19 +42,20 @@ export default async function handler(req, res) {
     console.log("Sending request to OpenAI...");
     const prompt = `
 Create a blog based on the following keywords: "${keywords}".
-When given the keywords, you should scan the top 5 search results on Google and create a comprehensive blog post that covers the topic in depth and average word count of the top 5 results.
+When given the keywords, you should research the top 5 search results on Google and create a comprehensive blog post that covers the topic in depth and average word count of the top 5 results.
 Your response should include:
 1. Title
 2. Meta Description
 3. Generate an intro paragraph for the blog (5 sentences long).
 4. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
-   - Bullet points (prefix with '-')
+   - Bullet points
    - Numbered lists (prefix with '1.', '2.', '3.')
 5. FAQs (at least 5 questions with answers)
 6. Generate an outro that includes:
    - A heading (H2) summarizing the conclusion.
    - A concise paragraph providing a conclusion for the blog (5 sentences long).
+7. Optional: If relevant to the website odysshoes.com, which is a customizable shoe store, include a section on how the topic relates to customizable shoes.
 
 Format the output as a JSON object with keys: 
 {
