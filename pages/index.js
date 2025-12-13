@@ -201,21 +201,37 @@ export default function Home() {
           <div style={{ marginTop: '2rem' }}>
             <h3>Saved Blogs</h3>
             {savedBlogs.length > 0 ? (
-  savedBlogs.map((blog, index) => (
-    <div key={index} style={{ marginBottom: '1.5rem', borderBottom: '1px solid #ccc' }}>
-      <h4>
-        <a
-          href={`https://odysshoes.com/blogs/news/${generateSlug(blog.title)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#0070f3', textDecoration: 'none' }}
-        >
-          {blog.title}
-        </a>
-      </h4>
-      <p dangerouslySetInnerHTML={{ __html: blog.body_html }} />
-    </div>
-  ))
+              <div
+                style={{
+                  maxHeight: '150px', // Limit height to 5 titles
+                  overflowY: 'scroll', // Enable scrolling for more titles
+                  border: '1px solid #ddd',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  backgroundColor: '#f9f9f9',
+                }}
+              >
+                {savedBlogs.map((blog, index) => (
+                  <div key={index} style={{ marginBottom: '0.5rem' }}>
+                    <h4
+                      style={{
+                        fontSize: '14px', // Set the font size to 14px
+                        margin: '0', // Remove extra spacing
+                        lineHeight: '1.5', // Add readable spacing
+                      }}
+                    >
+                      <a
+                        href={`https://odysshoes.com/blogs/news/${generateSlug(blog.title)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#0070f3', textDecoration: 'none' }}
+                      >
+                        {blog.title}
+                      </a>
+                    </h4>
+                  </div>
+                ))}
+              </div>
 ) : (
   <p>No blogs saved yet.</p>
 )}
