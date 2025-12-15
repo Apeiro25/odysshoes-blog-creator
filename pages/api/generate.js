@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 Create a blog based on the following keywords: "${keywords}".
 When given the keywords, you should research the top 5 search results on Google and create a comprehensive blog post that covers the topic in depth and average word count of the top 5 results.
 Your response should include:
-1. Title
+1. Title (avoid using "ultimate guide" or similar phrases)
 2. Meta Description
 3. Generate an intro paragraph for the blog (5 sentences long).
 4. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
