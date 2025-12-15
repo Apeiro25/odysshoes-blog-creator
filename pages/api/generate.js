@@ -116,24 +116,38 @@ Format the output as a JSON object with keys:
     })
     .join("") +
   
-  // Add FAQs before the outro
-  (result.faqs && result.faqs.length > 0
-    ? `<h2>Frequently Asked Questions:</h2>` +
-      result.faqs
-        .map(
-          (faq) =>
-            `<div>` +
-            `<h3>${faq.question}</h3>` +
-            `<p>${faq.answer}</p>` +
-            `</div>`
-        )
-        .join("")
-    : "") +
-
   `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
-    blog_id: blogId,
-    meta_description: result.metaDescription, // Add meta description here
-    author: author, // Dynamically set author name
+blog_id: blogId,
+meta_description: result.metaDescription, // Add meta description here
+author: author, // Dynamically set author name
+
+// Adding FAQs after the outro
+...(result.faqs && result.faqs.length > 0
+  ? `<h2>Frequently Asked Questions:</h2>` +
+    result.faqs
+      .map(
+        (faq) =>
+          `<div>` +
+          `<h3>${faq.question}</h3>` +
+          `<p>${faq.answer}</p>` +
+          `</div>`
+      )
+      .join("") +
+    `<script type="application/ld+json">` +
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": result.faqs.map((faq) => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer,
+        },
+      })),
+    }) +
+    `</script>`
+  : ""),
   }
 }),
       }
