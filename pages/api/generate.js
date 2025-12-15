@@ -51,6 +51,7 @@ Your response should include:
    - Paragraphs
    - Bullet points
    - Numbered lists (prefix with '1.', '2.', '3.')
+   - Tables (if necessary)
 5. FAQs (at least 5 questions with answers)
 6. Generate an outro that includes:
    - A heading (H2) summarizing the conclusion.
@@ -91,6 +92,9 @@ Format the output as a JSON object with keys:
         body: JSON.stringify({
   article: {
     title: result.title,
+    blog_id: blogId,
+meta_description: result.metaDescription, // Add meta description here
+author: author, // Dynamically set author name
    body_html:
   `<p>${result.intro}</p>` +
   result.mainContent
@@ -116,13 +120,10 @@ Format the output as a JSON object with keys:
     })
     .join("") +
   
-  `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`,
-blog_id: blogId,
-meta_description: result.metaDescription, // Add meta description here
-author: author, // Dynamically set author name
+  `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`+
 
 // Adding FAQs after the outro
-...(result.faqs && result.faqs.length > 0
+(result.faqs && result.faqs.length > 0
   ? `<h2>Frequently Asked Questions:</h2>` +
     result.faqs
       .map(
