@@ -58,7 +58,8 @@ Your response should include:
    - A concise paragraph providing a conclusion for the blog (5 sentences long).
 7. Optional: If relevant to the website odysshoes.com, which is a customizable shoe store, include a section on how the topic relates to customizable shoes.
 8. Do not include mentioning of brands names or their products.
-
+9. always put this link https://odysshoes.com/collections/custom-shoes to a word "customize shoes" "want to custom your shoes" or any similar to "custom shoes", strictly once only and in the last part of the blog.
+10.always put this link https://odysshoes.com/collections/custom-basketball-shoes to words like "customize basketball shoes", "customize your own basketball shoes" or any similar wordings strictly once only and in the last part of the blog.
 Format the output as a JSON object with keys: 
 {
   title: string,
