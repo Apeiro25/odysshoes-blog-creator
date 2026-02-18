@@ -21,10 +21,10 @@ export default async function handler(req, res) {
   const shopifyShop = process.env.SHOPIFY_SHOP;
   const blogId = process.env.SHOPIFY_BLOG_ID;
 
-  // Validate inputs
-  if (!competitorUrls || !Array.isArray(competitorUrls) || competitorUrls.length === 0 || !keywords || !author) {
+  // Validate inputs - keywords are now optional
+  if (!competitorUrls || !Array.isArray(competitorUrls) || competitorUrls.length === 0 || !author) {
     return res.status(400).json({
-      error: "competitorUrls (array), keywords, and author are required",
+      error: "competitorUrls (array) and author are required. Keywords are optional.",
     });
   }
 
@@ -61,9 +61,31 @@ export default async function handler(req, res) {
       });
     }
 
-    // Step 2: Generate unique content based on all scraped content
+    // Step 2: Auto-extract keywords if not provided
+    let finalKeywords = keywords;
+    
+    if (!keywords || keywords.trim() === "") {
+      console.log("Keywords not provided, auto-extracting from scraped content...");
+      const combinedTitles = scrapedContents.map(c => c.title).join(", ");
+      
+      const keywordResponse = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "user",
+            content: `Extract 3-5 main keywords/topics from these blog titles and content. Return as comma-separated keywords only, nothing else.\n\nTitles: ${combinedTitles}`,
+          },
+        ],
+        max_tokens: 200,
+      });
+      
+      finalKeywords = keywordResponse.choices[0].message.content.trim();
+      console.log("Auto-extracted keywords:", finalKeywords);
+    }
+
+    // Step 3: Generate unique content based on all scraped content
     const combinedContent = scrapedContents.map(c => c.body).join("\n\n---\n\n");
-    const uniquenessPrompt = generateUniquenessPrompt(combinedContent, keywords);
+    const uniquenessPrompt = generateUniquenessPrompt(combinedContent, finalKeywords);
 
     console.log("Generating unique content from competitor research...");
 
@@ -75,7 +97,7 @@ export default async function handler(req, res) {
           content: `${uniquenessPrompt}
 
 Generate a comprehensive blog post that:
-1. Covers the topic: "${keywords}"
+1. Covers the topic: "${finalKeywords}"
 2. Is completely unique and original
 3. Includes 2000+ words
 4. Has clear H2 sections with useful information

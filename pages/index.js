@@ -73,8 +73,8 @@ export default function Home() {
       return;
     }
 
-    if (mode === 'scrape' && (!competitorUrl || !keywords || !author)) {
-      setError('Competitor URL, Keywords, and Author name are required.');
+    if (mode === 'scrape' && (!competitorUrl || !author)) {
+      setError('Competitor URLs and Author name are required. Keywords are optional.');
       setLoading(false);
       return;
     }
@@ -186,7 +186,7 @@ export default function Home() {
           {/* Keywords Input */}
           <input
             type="text"
-            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : "Blog Keywords"}
+            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : "Blog Keywords (optional - auto-detected if left blank)"}
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             style={inputStyle}

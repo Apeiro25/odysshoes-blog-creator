@@ -62,10 +62,11 @@ Create completely new, original blog posts from scratch.
 
 ### Mode 2: 🔍 Scrape & Repurpose
 Analyze competitor blogs and generate unique variations from multiple sources.
-- **Inputs**: Competitor Blog URLs (comma-separated) + Keywords + Author Name
+- **Inputs**: Competitor Blog URLs (comma-separated) + Author Name + Keywords (optional)
 - **Output**: Original content inspired by competitor research (synthesized from all sources)
 - **Features**: 
   - Extracts content from multiple competitor sources
+  - Auto-detects main keywords if not provided
   - Uses AI to create completely unique content combining insights from all sources
   - Includes attribution to original sources
   - Maintains topic relevance with your keywords
