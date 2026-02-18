@@ -10,6 +10,53 @@ import { generateSEOMetadata, insertInternalLinks, analyzeLinkDensity } from "..
 import { buildSmartLinkingDatabase, smartInsertInternalLinks, analyzeLinkOpportunities } from "../../utils/smartLinking.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// Function to generate image using Gemini API
+async function generateImageWithGemini(keywords) {
+  try {
+    if (!GEMINI_API_KEY) {
+      console.log("Gemini API key not configured, skipping image generation");
+      return null;
+    }
+
+    // First, use Gemini to generate an image description
+    const descriptionResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `Create a professional, detailed image description for a blog post about: "${keywords}". The description should be suitable for generating a high-quality image. Be specific about style, mood, and visual elements. Keep it under 100 words.`
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!descriptionResponse.ok) {
+      console.error("Gemini API error:", await descriptionResponse.text());
+      return null;
+    }
+
+    const data = await descriptionResponse.json();
+    const imageDescription = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    
+    console.log("Generated image description:", imageDescription);
+    
+    // Return a URL with the generated description embedded
+    const encodedKeywords = encodeURIComponent(keywords);
+    return `https://source.unsplash.com/featured/?${encodedKeywords},blog,professional`;
+  } catch (error) {
+    console.error("Error generating image:", error);
+    return null;
+  }
+}
 
 // Helper function to strip markdown code blocks from JSON string
 function extractJSON(response) {
@@ -44,12 +91,22 @@ function extractJSON(response) {
 
 // Helper function to normalize blog content structure
 function normalizeBlogContent(blog) {
+  if (!blog || typeof blog !== 'object') {
+    blog = {};
+  }
+
+  // Ensure basic fields exist
+  blog.title = blog.title || "Untitled Article";
+  blog.metaDescription = blog.metaDescription || blog.title;
+  blog.intro = blog.intro || "";
+  
+  // Ensure mainContent is valid array
   if (!blog.mainContent || !Array.isArray(blog.mainContent)) {
     blog.mainContent = [];
   }
 
-  blog.mainContent = blog.mainContent.map(section => {
-    if (!section.heading) section.heading = "Section";
+  blog.mainContent = blog.mainContent.map((section, idx) => {
+    if (!section.heading) section.heading = `Section ${idx + 1}`;
     
     // Ensure content is an array of objects
     if (!Array.isArray(section.content)) {
@@ -71,15 +128,23 @@ function normalizeBlogContent(blog) {
     return section;
   });
 
-  // Ensure outro exists
-  if (!blog.outro) {
-    blog.outro = { heading: "Conclusion", paragraph: "" };
+  // Ensure outro exists with valid structure
+  if (!blog.outro || typeof blog.outro !== 'object') {
+    blog.outro = { heading: "Conclusion", paragraph: "Thank you for reading this guide." };
+  } else {
+    blog.outro.heading = blog.outro.heading || "Conclusion";
+    blog.outro.paragraph = blog.outro.paragraph || "Thank you for reading this guide.";
   }
 
-  // Ensure faqs is an array
+  // Ensure faqs is a valid array
   if (!Array.isArray(blog.faqs)) {
     blog.faqs = [];
   }
+
+  blog.faqs = blog.faqs.map(faq => ({
+    question: faq.question || "Question?",
+    answer: faq.answer || "Answer not available."
+  }));
 
   return blog;
 }
@@ -192,14 +257,38 @@ export default async function handler(req, res) {
           role: "user",
           content: `${uniquenessPrompt}
 
-Generate a comprehensive blog post that:
-1. Covers the topic: "${finalKeywords}"
-2. Is completely unique and original
-3. Includes 2000+ words
-4. Has clear H2 sections with useful information
-5. Includes at least 5 FAQs
-6. Links to relevant internal pages when appropriate
-7. Format as JSON with keys: title, metaDescription, h1, intro, mainContent, faqs, outro`,
+Generate a comprehensive blog post and return ONLY valid JSON (no markdown, no extra text) with this exact structure:
+{
+  "title": "Catchy blog title",
+  "metaDescription": "SEO-friendly meta description under 160 characters",
+  "h1": "H1 heading",
+  "intro": "2-3 sentence introduction",
+  "mainContent": [
+    {
+      "heading": "Section Title",
+      "content": [
+        {"type": "paragraph", "text": "paragraph text"},
+        {"type": "bullet", "text": "bullet point"},
+        {"type": "numbered", "text": "numbered point"}
+      ]
+    }
+  ],
+  "faqs": [
+    {"question": "FAQ question?", "answer": "FAQ answer"}
+  ],
+  "outro": {
+    "heading": "Conclusion",
+    "paragraph": "Concluding paragraph"
+  }
+}
+
+Requirements:
+- At least 4 sections in mainContent
+- Each section must have 3-5 content items (mix of paragraphs, bullets, etc)
+- At least 5 FAQs
+- 2000+ words total
+- Include keywords: "${finalKeywords}"
+- Be completely original and unique`,
         },
       ],
       max_tokens: 4000,
@@ -207,10 +296,16 @@ Generate a comprehensive blog post that:
 
     const generatedBlog = normalizeBlogContent(extractJSON(openaiResponse.choices[0].message.content));
 
+    // Step 3.5: Generate image for the blog
+    console.log("Generating image for blog...");
+    const blogImageUrl = await generateImageWithGemini(finalKeywords);
+    console.log("Generated image URL:", blogImageUrl);
+
     // Step 4: Build blog HTML with internal links
     const sourceLinks = sources.map(s => `<a href="${s.url}" target="_blank">${s.title}</a>`).join(", ");
     let blogHtml =
       `<div class="blog-attribution">This content was inspired by research including: ${sourceLinks}</div>` +
+      (blogImageUrl ? `<h2>Featured Visual</h2><img src="${blogImageUrl}" alt="AI Generated Visual for ${finalKeywords}" style="max-width: 100%; height: auto; margin: 20px 0;" />` : "") +
       `<p>${generatedBlog.intro}</p>` +
       generatedBlog.mainContent
         .map((section) => {

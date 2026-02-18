@@ -38,12 +38,22 @@ function extractJSON(response) {
 
 // Helper function to normalize blog content structure
 function normalizeBlogContent(blog) {
+  if (!blog || typeof blog !== 'object') {
+    blog = {};
+  }
+
+  // Ensure basic fields exist
+  blog.title = blog.title || "Untitled Article";
+  blog.metaDescription = blog.metaDescription || blog.title;
+  blog.intro = blog.intro || "";
+  
+  // Ensure mainContent is valid array
   if (!blog.mainContent || !Array.isArray(blog.mainContent)) {
     blog.mainContent = [];
   }
 
-  blog.mainContent = blog.mainContent.map(section => {
-    if (!section.heading) section.heading = "Section";
+  blog.mainContent = blog.mainContent.map((section, idx) => {
+    if (!section.heading) section.heading = `Section ${idx + 1}`;
     
     // Ensure content is an array of objects
     if (!Array.isArray(section.content)) {
@@ -65,15 +75,23 @@ function normalizeBlogContent(blog) {
     return section;
   });
 
-  // Ensure outro exists
-  if (!blog.outro) {
-    blog.outro = { heading: "Conclusion", paragraph: "" };
+  // Ensure outro exists with valid structure
+  if (!blog.outro || typeof blog.outro !== 'object') {
+    blog.outro = { heading: "Conclusion", paragraph: "Thank you for reading this guide." };
+  } else {
+    blog.outro.heading = blog.outro.heading || "Conclusion";
+    blog.outro.paragraph = blog.outro.paragraph || "Thank you for reading this guide.";
   }
 
-  // Ensure faqs is an array
+  // Ensure faqs is a valid array
   if (!Array.isArray(blog.faqs)) {
     blog.faqs = [];
   }
+
+  blog.faqs = blog.faqs.map(faq => ({
+    question: faq.question || "Question?",
+    answer: faq.answer || "Answer not available."
+  }));
 
   return blog;
 }
@@ -326,17 +344,30 @@ Your response should include:
 8. Do not include mentioning of brands names or their products.
 9. always put this link https://odysshoes.com/collections/custom-shoes to a word "customize shoes" "want to custom your shoes" or any similar to "custom shoes", strictly once only and in the last part of the blog.
 10.always put this link https://odysshoes.com/collections/custom-basketball-shoes to words like "customize basketball shoes", "customize your own basketball shoes" or any similar wordings strictly once only and in the last part of the blog.
-Format the output as a JSON object with keys: 
+
+Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
 {
-  title: string,
-  metaDescription: string,
-  h1: string,
-  intro: string,
-  mainContent: [
-    { heading: string, content: [{ type: "paragraph" | "bullet" | "numbered", text: string }] }
+  "title": "Catchy blog title",
+  "metaDescription": "SEO-friendly meta description under 160 characters",
+  "h1": "H1 heading",
+  "intro": "2-3 sentence introduction",
+  "mainContent": [
+    {
+      "heading": "Section Title",
+      "content": [
+        {"type": "paragraph", "text": "paragraph text"},
+        {"type": "bullet", "text": "bullet point"},
+        {"type": "numbered", "text": "numbered point"}
+      ]
+    }
   ],
-  faqs: [{ question: string, answer: string }],
-  outro: { heading: string, paragraph: string }
+  "faqs": [
+    {"question": "FAQ question?", "answer": "FAQ answer"}
+  ],
+  "outro": {
+    "heading": "Conclusion",
+    "paragraph": "Concluding paragraph"
+  }
 }`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
