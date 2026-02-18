@@ -69,28 +69,49 @@ export default async function handler(req, res) {
       const combinedTitles = scrapedContents.map(c => c.title).join(", ");
       
       const keywordResponse = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-4-turbo",
         messages: [
           {
             role: "user",
-            content: `Extract 3-5 main keywords/topics from these blog titles and content. Return as comma-separated keywords only, nothing else.\n\nTitles: ${combinedTitles}`,
+            content: `Extract 3-5 main keywords/topics from these blog titles. Return as comma-separated keywords only, nothing else.\n\nTitles: ${combinedTitles}`,
           },
         ],
-        max_tokens: 200,
+        max_tokens: 100,
       });
       
       finalKeywords = keywordResponse.choices[0].message.content.trim();
       console.log("Auto-extracted keywords:", finalKeywords);
     }
 
-    // Step 3: Generate unique content based on all scraped content
-    const combinedContent = scrapedContents.map(c => c.body).join("\n\n---\n\n");
-    const uniquenessPrompt = generateUniquenessPrompt(combinedContent, finalKeywords);
+    // Step 3: Summarize each blog's content to reduce token count
+    console.log("Summarizing competitor content...");
+    const summaries = [];
+    
+    for (const scrapedContent of scrapedContents) {
+      const summaryResponse = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        messages: [
+          {
+            role: "user",
+            content: `Summarize the key points from this blog content in 3-4 bullet points. Be concise.\n\nContent: ${scrapedContent.body.substring(0, 2000)}`,
+          },
+        ],
+        max_tokens: 300,
+      });
+      
+      summaries.push({
+        title: scrapedContent.title,
+        summary: summaryResponse.choices[0].message.content,
+      });
+    }
+
+    const combinedSummary = summaries.map(s => `Title: ${s.title}\n${s.summary}`).join("\n\n---\n\n");
+    const uniquenessPrompt = generateUniquenessPrompt(combinedSummary, finalKeywords);
 
     console.log("Generating unique content from competitor research...");
 
     const openaiResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4-turbo",
       messages: [
         {
           role: "user",
@@ -106,7 +127,7 @@ Generate a comprehensive blog post that:
 7. Format as JSON with keys: title, metaDescription, h1, intro, mainContent, faqs, outro`,
         },
       ],
-      max_tokens: 5000,
+      max_tokens: 4000,
     });
 
     const generatedBlog = JSON.parse(openaiResponse.choices[0].message.content);

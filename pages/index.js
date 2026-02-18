@@ -117,11 +117,12 @@ export default function Home() {
           }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error('Failed to scrape and generate blog from competitor');
+          throw new Error(data.error || data.details || 'Failed to scrape and generate blog from competitor');
         }
 
-        const data = await response.json();
         setContent([data.generatedBlog]);
         setSavedBlogs((prev) => [...prev, data.generatedBlog]);
         localStorage.setItem('savedBlogs', JSON.stringify([...savedBlogs, data.generatedBlog]));
