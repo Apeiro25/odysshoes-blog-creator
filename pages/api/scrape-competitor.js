@@ -141,9 +141,10 @@ Generate a comprehensive blog post that:
 
     const generatedBlog = JSON.parse(extractJSON(openaiResponse.choices[0].message.content));
 
-    // Step 3: Build blog HTML with internal links
+    // Step 4: Build blog HTML with internal links
+    const sourceLinks = sources.map(s => `<a href="${s.url}" target="_blank">${s.title}</a>`).join(", ");
     let blogHtml =
-      `<div class="blog-attribution">This content was inspired by research including: <a href="${competitorUrl}" target="_blank">Read original source</a></div>` +
+      `<div class="blog-attribution">This content was inspired by research including: ${sourceLinks}</div>` +
       `<p>${generatedBlog.intro}</p>` +
       generatedBlog.mainContent
         .map((section) => {
