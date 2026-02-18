@@ -14,6 +14,48 @@ function extractJSON(response) {
   return response.trim();
 }
 
+// Helper function to normalize blog content structure
+function normalizeBlogContent(blog) {
+  if (!blog.mainContent || !Array.isArray(blog.mainContent)) {
+    blog.mainContent = [];
+  }
+
+  blog.mainContent = blog.mainContent.map(section => {
+    if (!section.heading) section.heading = "Section";
+    
+    // Ensure content is an array of objects
+    if (!Array.isArray(section.content)) {
+      if (typeof section.content === "string") {
+        section.content = [{ type: "paragraph", text: section.content }];
+      } else {
+        section.content = [];
+      }
+    }
+
+    // Validate each content item
+    section.content = section.content.map(item => {
+      if (typeof item === "string") {
+        return { type: "paragraph", text: item };
+      }
+      return item || { type: "paragraph", text: "" };
+    });
+
+    return section;
+  });
+
+  // Ensure outro exists
+  if (!blog.outro) {
+    blog.outro = { heading: "Conclusion", paragraph: "" };
+  }
+
+  // Ensure faqs is an array
+  if (!Array.isArray(blog.faqs)) {
+    blog.faqs = [];
+  }
+
+  return blog;
+}
+
 // Function to generate image using Gemini API
 async function generateImageWithGemini(keywords) {
   try {
@@ -274,7 +316,7 @@ Format the output as a JSON object with keys:
       max_tokens: 4000,
     });
 
-    const result = JSON.parse(extractJSON(response.choices[0].message.content));
+    const result = normalizeBlogContent(JSON.parse(extractJSON(response.choices[0].message.content)));
 
     console.log("Publishing blog post to Shopify...");
 
@@ -284,22 +326,22 @@ Format the output as a JSON object with keys:
       (generatedImageURL ? `<h2>Featured Visual</h2><img src="${generatedImageURL}" alt="AI Generated Visual for ${keywords}" style="max-width: 100%; height: auto; margin: 20px 0;" />` : "") +
       result.mainContent
         .map((section) => {
-          let numberedItems = section.content
-            .filter((c) => c.type === "numbered")
-            .map((c) => `<li>${c.text}</li>`)
-            .join("");
+          let numberedItems = Array.isArray(section.content) ? section.content
+            .filter((c) => c && c.type === "numbered")
+            .map((c) => `<li>${c.text || ""}</li>`)
+            .join("") : "";
 
           return (
-            `<h2>${section.heading}</h2>` +
-            section.content
+            `<h2>${section.heading || "Section"}</h2>` +
+            (Array.isArray(section.content) ? section.content
               .map((c) =>
-                c.type === "paragraph"
-                  ? `<p>${c.text}</p>`
-                  : c.type === "bullet"
-                  ? `<ul><li>${c.text}</li></ul>`
+                c && c.type === "paragraph"
+                  ? `<p>${c.text || ""}</p>`
+                  : c && c.type === "bullet"
+                  ? `<ul><li>${c.text || ""}</li></ul>`
                   : ""
               )
-              .join("") +
+              .join("") : "") +
             (numberedItems ? `<ol>${numberedItems}</ol>` : "")
           );
         })
@@ -308,14 +350,14 @@ Format the output as a JSON object with keys:
       `<h2>${result.outro.heading}</h2><p>${result.outro.paragraph}</p>`+
 
       // Adding FAQs after the outro
-      (result.faqs && result.faqs.length > 0
+      (result.faqs && Array.isArray(result.faqs) && result.faqs.length > 0
         ? `<h2>Frequently Asked Questions:</h2>` +
           result.faqs
             .map(
               (faq) =>
                 `<div>` +
-                `<h3>${faq.question}</h3>` +
-                `<p>${faq.answer}</p>` +
+                `<h3>${faq.question || ""}</h3>` +
+                `<p>${faq.answer || ""}</p>` +
                 `</div>`
             )
             .join("") +

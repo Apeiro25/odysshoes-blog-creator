@@ -20,6 +20,48 @@ function extractJSON(response) {
   return response.trim();
 }
 
+// Helper function to normalize blog content structure
+function normalizeBlogContent(blog) {
+  if (!blog.mainContent || !Array.isArray(blog.mainContent)) {
+    blog.mainContent = [];
+  }
+
+  blog.mainContent = blog.mainContent.map(section => {
+    if (!section.heading) section.heading = "Section";
+    
+    // Ensure content is an array of objects
+    if (!Array.isArray(section.content)) {
+      if (typeof section.content === "string") {
+        section.content = [{ type: "paragraph", text: section.content }];
+      } else {
+        section.content = [];
+      }
+    }
+
+    // Validate each content item
+    section.content = section.content.map(item => {
+      if (typeof item === "string") {
+        return { type: "paragraph", text: item };
+      }
+      return item || { type: "paragraph", text: "" };
+    });
+
+    return section;
+  });
+
+  // Ensure outro exists
+  if (!blog.outro) {
+    blog.outro = { heading: "Conclusion", paragraph: "" };
+  }
+
+  // Ensure faqs is an array
+  if (!Array.isArray(blog.faqs)) {
+    blog.faqs = [];
+  }
+
+  return blog;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -140,41 +182,42 @@ Generate a comprehensive blog post that:
     });
 
     const generatedBlog = JSON.parse(extractJSON(openaiResponse.choices[0].message.content));
+    const normalizedBlog = normalizeBlogContent(generatedBlog);
 
     // Step 4: Build blog HTML with internal links
     const sourceLinks = sources.map(s => `<a href="${s.url}" target="_blank">${s.title}</a>`).join(", ");
     let blogHtml =
       `<div class="blog-attribution">This content was inspired by research including: ${sourceLinks}</div>` +
-      `<p>${generatedBlog.intro}</p>` +
-      generatedBlog.mainContent
+      `<p>${normalizedBlog.intro}</p>` +
+      normalizedBlog.mainContent
         .map((section) => {
-          let numberedItems = section.content
-            .filter((c) => c.type === "numbered")
-            .map((c) => `<li>${c.text}</li>`)
-            .join("");
+          let numberedItems = Array.isArray(section.content) ? section.content
+            .filter((c) => c && c.type === "numbered")
+            .map((c) => `<li>${c.text || ""}</li>`)
+            .join("") : "";
 
           return (
-            `<h2>${section.heading}</h2>` +
-            section.content
+            `<h2>${section.heading || "Section"}</h2>` +
+            (Array.isArray(section.content) ? section.content
               .map((c) =>
-                c.type === "paragraph"
-                  ? `<p>${c.text}</p>`
-                  : c.type === "bullet"
-                  ? `<ul><li>${c.text}</li></ul>`
+                c && c.type === "paragraph"
+                  ? `<p>${c.text || ""}</p>`
+                  : c && c.type === "bullet"
+                  ? `<ul><li>${c.text || ""}</li></ul>`
                   : ""
               )
-              .join("") +
+              .join("") : "") +
             (numberedItems ? `<ol>${numberedItems}</ol>` : "")
           );
         })
         .join("") +
-      `<h2>${generatedBlog.outro.heading}</h2><p>${generatedBlog.outro.paragraph}</p>` +
-      (generatedBlog.faqs && generatedBlog.faqs.length > 0
+      `<h2>${normalizedBlog.outro.heading}</h2><p>${normalizedBlog.outro.paragraph}</p>` +
+      (normalizedBlog.faqs && normalizedBlog.faqs.length > 0
         ? `<h2>Frequently Asked Questions:</h2>` +
-          generatedBlog.faqs
+          normalizedBlog.faqs
             .map(
               (faq) =>
-                `<div><h3>${faq.question}</h3><p>${faq.answer}</p></div>`
+                `<div><h3>${faq.question || ""}</h3><p>${faq.answer || ""}</p></div>`
             )
             .join("")
         : "");
