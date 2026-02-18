@@ -234,7 +234,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Load Shopify credentials from environment variables
+  // Load Shopify credentials from environment variables (optional)
   const shopifyToken = process.env.SHOPIFY_API_TOKEN;
   const shopifyShop = process.env.SHOPIFY_SHOP;
   const blogId = process.env.SHOPIFY_BLOG_ID;
@@ -262,20 +262,20 @@ export default async function handler(req, res) {
       .json({ error: "Author name is required and must be a string." });
   }
 
-  if (!shopifyToken || !shopifyShop || !blogId) {
-    console.error("Missing Shopify environment variables:", {
-      shopifyToken: !!shopifyToken,
-      shopifyShop: !!shopifyShop,
-      blogId: !!blogId,
-    });
-    return res.status(400).json({
-      error: "Shopify configuration missing. Please set SHOPIFY_API_TOKEN, SHOPIFY_SHOP, and SHOPIFY_BLOG_ID in environment variables.",
-    });
+  const hasShopifyConfig = shopifyToken && shopifyShop && blogId;
+  if (!hasShopifyConfig) {
+    console.warn("Shopify credentials not fully configured. Blog will be generated without Shopify integration.");
   }
 
   try {
-    console.log("Generating and uploading AI image to Shopify...");
-    const generatedImageURL = await generateAndUploadImage(keywords, shopifyShop, shopifyToken);
+    let generatedImageURL = null;
+    
+    if (hasShopifyConfig) {
+      console.log("Generating and uploading AI image to Shopify...");
+      generatedImageURL = await generateAndUploadImage(keywords, shopifyShop, shopifyToken);
+    } else {
+      console.log("Shopify not configured, skipping image upload...");
+    }
     
     console.log("Sending request to OpenAI...");
     const prompt = `
@@ -377,54 +377,80 @@ Format the output as a JSON object with keys:
           `</script>`
         : "");
 
-    // Apply SEO optimization with smart internal links
-    console.log("Building smart linking database from Shopify store...");
-    const smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
+    // Apply SEO optimization with smart internal links (optional if Shopify not configured)
+    console.log("Applying SEO optimization...");
+    let optimizedHtml = blogHtml;
+    let smartLinkDatabase = [];
+    let linkOpportunities = { opportunities: [], total: 0 };
+    let linkAnalysis = { totalWords: 0, linkCount: 0, linkDensity: "0", recommendation: "N/A" };
     
-    console.log("Optimizing for SEO and inserting smart internal links...");
-    const optimizedHtml = smartInsertInternalLinks(blogHtml, smartLinkDatabase);
-    
-    // Analyze link opportunities that were found but not used
-    const linkOpportunities = analyzeLinkOpportunities(blogHtml, smartLinkDatabase);
-    console.log("Link opportunities:", linkOpportunities);
-    
-    // Analyze link density for reporting
-    const linkAnalysis = analyzeLinkDensity(optimizedHtml);
-    console.log("Link density analysis:", linkAnalysis);
+    if (hasShopifyConfig) {
+      try {
+        console.log("Building smart linking database from Shopify store...");
+        smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
+        
+        console.log("Optimizing for SEO and inserting smart internal links...");
+        optimizedHtml = smartInsertInternalLinks(blogHtml, smartLinkDatabase);
+        
+        // Analyze link opportunities that were found but not used
+        linkOpportunities = analyzeLinkOpportunities(blogHtml, smartLinkDatabase);
+        console.log("Link opportunities:", linkOpportunities);
+        
+        // Analyze link density for reporting
+        linkAnalysis = analyzeLinkDensity(optimizedHtml);
+        console.log("Link density analysis:", linkAnalysis);
+      } catch (shopifyError) {
+        console.warn("Shopify smart linking skipped:", shopifyError.message);
+        // Continue without smart linking
+      }
+    } else {
+      console.log("Shopify not configured, skipping smart linking...");
+    }
     
     // Generate SEO metadata
     const seoMetadata = generateSEOMetadata(result.title, optimizedHtml, keywords);
     console.log("SEO metadata:", seoMetadata);
 
-    // Publish to Shopify with optimized content
-    const shopifyResponse = await fetch(
-      `https://${shopifyShop}/admin/api/2023-01/articles.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": shopifyToken,
-        },
-        body: JSON.stringify({
-          article: {
-            title: result.title,
-            blog_id: blogId,
-            meta_description: result.metaDescription,
-            author: author,
-            body_html: optimizedHtml,
-          },
-        }),
+    // Publish to Shopify with optimized content (optional)
+    let shopifyResult = null;
+    
+    if (hasShopifyConfig) {
+      try {
+        const shopifyResponse = await fetch(
+          `https://${shopifyShop}/admin/api/2023-01/articles.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": shopifyToken,
+            },
+            body: JSON.stringify({
+              article: {
+                title: result.title,
+                blog_id: blogId,
+                meta_description: result.metaDescription,
+                author: author,
+                body_html: optimizedHtml,
+              },
+            }),
+          }
+        );
+
+        if (!shopifyResponse.ok) {
+          const errorDetails = await shopifyResponse.json();
+          console.error("Shopify API Error:", errorDetails);
+          console.warn("Blog generated successfully but Shopify publishing failed");
+        } else {
+          shopifyResult = await shopifyResponse.json();
+          console.log("Published to Shopify successfully");
+        }
+      } catch (shopifyError) {
+        console.warn("Shopify publishing failed:", shopifyError.message);
+        console.log("Blog generated successfully but Shopify publishing skipped");
       }
-    );
-
-    if (!shopifyResponse.ok) {
-      const errorDetails = await shopifyResponse.json(); // Log detailed error info
-      console.error("Shopify API Error:", errorDetails);
-      console.log("Meta Description Sent:", result.metaDescription);
-      return res.status(shopifyResponse.status).json({ error: errorDetails });
+    } else {
+      console.log("Shopify not configured, skipping publishing...");
     }
-
-    const shopifyResult = await shopifyResponse.json();
 
     res.status(200).json({
       success: true,

@@ -222,52 +222,76 @@ Generate a comprehensive blog post that:
             .join("")
         : "");
 
-    // Step 4: Apply SEO optimization with smart internal links
+    // Step 4: Apply SEO optimization with smart internal links (optional if Shopify not configured)
     console.log("Building smart linking database from Shopify store...");
-    const smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
     
-    console.log("Optimizing for SEO with smart internal links...");
-    const optimizedHtml = smartInsertInternalLinks(blogHtml, smartLinkDatabase);
+    let optimizedHtml = blogHtml;
+    let smartLinkDatabase = [];
+    let linkAnalysis = { totalWords: 0, linkCount: 0, linkDensity: "0", recommendation: "N/A" };
+    let linkOpportunities = { opportunities: [], total: 0 };
     
-    const linkOpportunities = analyzeLinkOpportunities(blogHtml, smartLinkDatabase);
-    console.log("Link opportunities:", linkOpportunities);
-    
-    const linkAnalysis = analyzeLinkDensity(optimizedHtml);
+    if (shopifyShop && shopifyToken) {
+      try {
+        smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
+        console.log("Built linking database with", smartLinkDatabase.length, "links");
+        
+        optimizedHtml = smartInsertInternalLinks(blogHtml, smartLinkDatabase);
+        linkOpportunities = analyzeLinkOpportunities(blogHtml, smartLinkDatabase);
+        linkAnalysis = analyzeLinkDensity(optimizedHtml);
+      } catch (shopifyError) {
+        console.warn("Shopify integration skipped:", shopifyError.message);
+        // Continue without Shopify optimization
+      }
+    } else {
+      console.log("Shopify credentials not configured, skipping smart linking...");
+    }
     const seoMetadata = generateSEOMetadata(generatedBlog.title, optimizedHtml, keywords);
 
     console.log("SEO metadata:", seoMetadata);
     console.log("Link analysis:", linkAnalysis);
 
-    // Step 5: Publish to Shopify
-    console.log("Publishing to Shopify...");
+    // Step 5: Publish to Shopify (optional if credentials not configured)
+    let shopifyResult = null;
+    
+    if (shopifyShop && shopifyToken && blogId) {
+      try {
+        console.log("Publishing to Shopify...");
 
-    const shopifyResponse = await fetch(
-      `https://${shopifyShop}/admin/api/2023-01/articles.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": shopifyToken,
-        },
-        body: JSON.stringify({
-          article: {
-            title: generatedBlog.title,
-            blog_id: blogId,
-            meta_description: generatedBlog.metaDescription,
-            author: author,
-            body_html: optimizedHtml,
-          },
-        }),
+        const shopifyResponse = await fetch(
+          `https://${shopifyShop}/admin/api/2023-01/articles.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": shopifyToken,
+            },
+            body: JSON.stringify({
+              article: {
+                title: generatedBlog.title,
+                blog_id: blogId,
+                meta_description: generatedBlog.metaDescription,
+                author: author,
+                body_html: optimizedHtml,
+              },
+            }),
+          }
+        );
+
+        if (!shopifyResponse.ok) {
+          const errorDetails = await shopifyResponse.json();
+          console.error("Shopify API Error:", errorDetails);
+          console.warn("Blog generated successfully but Shopify publishing failed");
+        } else {
+          shopifyResult = await shopifyResponse.json();
+          console.log("Published to Shopify successfully");
+        }
+      } catch (shopifyError) {
+        console.warn("Shopify publishing failed:", shopifyError.message);
+        console.log("Blog generated successfully but Shopify publishing skipped");
       }
-    );
-
-    if (!shopifyResponse.ok) {
-      const errorDetails = await shopifyResponse.json();
-      console.error("Shopify API Error:", errorDetails);
-      return res.status(shopifyResponse.status).json({ error: errorDetails });
+    } else {
+      console.log("Shopify credentials not configured, skipping publishing...");
     }
-
-    const shopifyResult = await shopifyResponse.json();
 
     res.status(200).json({
       success: true,
