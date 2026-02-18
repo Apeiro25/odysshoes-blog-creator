@@ -50,7 +50,7 @@ Your response should include:
 4. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
    - Paragraphs
    - Bullet points
-   - Numbered lists (prefix with '1.', '2.', '3.')
+   - Numbered lists (prefix with '1.', '2.', '3.' 4.' etc.)
    - Tables (if necessary)
 5. FAQs (at least 5 questions with answers)
 6. Generate an outro that includes:
