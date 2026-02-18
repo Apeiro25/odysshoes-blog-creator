@@ -4,10 +4,9 @@ import React, { useState, useEffect } from 'react';
 
 export default function Home() {
   const [keywords, setKeywords] = useState('');
-  const [shopifyToken, setShopifyToken] = useState('');
-  const [shopifyShop, setShopifyShop] = useState('');
-  const [blogId, setBlogId] = useState('');
   const [author, setAuthor] = useState('');
+  const [competitorUrl, setCompetitorUrl] = useState('');
+  const [mode, setMode] = useState('generate'); // 'generate' or 'scrape'
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,36 +66,66 @@ export default function Home() {
     setError('');
     setContent(null);
 
-    if (!shopifyToken || !shopifyShop || !blogId || !author) {
-      setError('All fields are required.');
+    // Validation based on mode
+    if (mode === 'generate' && (!keywords || !author)) {
+      setError('Keywords and Author name are required.');
       setLoading(false);
       return;
     }
 
-    const keywordList = keywords.split(',').map((kw) => kw.trim()); // Split and trim keywords
-    const generatedBlogs = []; // Store generated blogs
+    if (mode === 'scrape' && (!competitorUrl || !keywords || !author)) {
+      setError('Competitor URL, Keywords, and Author name are required.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      for (const keyword of keywordList) {
-        const response = await fetch('/api/generate', {
+      let endpoint = '/api/generate';
+      let body = {};
+
+      if (mode === 'generate') {
+        const keywordList = keywords.split(',').map((kw) => kw.trim());
+        const generatedBlogs = [];
+
+        for (const keyword of keywordList) {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyword, author }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to generate blog for keyword: ${keyword}`);
+          }
+
+          const data = await response.json();
+          generatedBlogs.push(data.blog);
+        }
+
+        setContent(generatedBlogs);
+        setSavedBlogs((prev) => [...prev, ...generatedBlogs]);
+        localStorage.setItem('savedBlogs', JSON.stringify([...savedBlogs, ...generatedBlogs]));
+      } else if (mode === 'scrape') {
+        endpoint = '/api/scrape-competitor';
+        const response = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ keywords: keyword, shopifyToken, shopifyShop, blogId, author }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            competitorUrl, 
+            keywords, 
+            author 
+          }),
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to generate blog for keyword: ${keyword}`);
+          throw new Error('Failed to scrape and generate blog from competitor');
         }
 
         const data = await response.json();
-        generatedBlogs.push(data.blog); // Add generated blog to the list
+        setContent([data.generatedBlog]);
+        setSavedBlogs((prev) => [...prev, data.generatedBlog]);
+        localStorage.setItem('savedBlogs', JSON.stringify([...savedBlogs, data.generatedBlog]));
       }
-
-      setContent(generatedBlogs); // Display all generated blogs
-      setSavedBlogs((prev) => [...prev, ...generatedBlogs]); // Save them in local state
-      localStorage.setItem('savedBlogs', JSON.stringify([...savedBlogs, ...generatedBlogs])); // Update local storage
     } catch (err) {
       setError(err.message);
     } finally {
@@ -108,38 +137,57 @@ export default function Home() {
     <div style={centeredContainer}>
       <div style={cardStyle}>
         <h1 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Blog Creator</h1>
+        
+        {/* Mode Selection */}
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setMode('generate')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: mode === 'generate' ? '#0070f3' : '#ccc',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ✨ Generate Blog
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('scrape')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: mode === 'scrape' ? '#0070f3' : '#ccc',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            🔍 Scrape & Repurpose
+          </button>
+        </div>
+
         <form onSubmit={generateBlog}>
-          {/* Shopify API Key Input */}
-          <input
-            type="text"
-            placeholder="Shopify API Key"
-            value={shopifyToken}
-            onChange={(e) => setShopifyToken(e.target.value)}
-            style={inputStyle}
-          />
-
-          {/* Shopify Store Input */}
-          <input
-            type="text"
-            placeholder="Shopify Store"
-            value={shopifyShop}
-            onChange={(e) => setShopifyShop(e.target.value)}
-            style={inputStyle}
-          />
-
-          {/* Blog ID Input */}
-          <input
-            type="text"
-            placeholder="Blog ID"
-            value={blogId}
-            onChange={(e) => setBlogId(e.target.value)}
-            style={inputStyle}
-          />
+          {/* Competitor URL - Only shown in scrape mode */}
+          {mode === 'scrape' && (
+            <input
+              type="url"
+              placeholder="Competitor Blog URL (e.g., https://example.com/blog/post)"
+              value={competitorUrl}
+              onChange={(e) => setCompetitorUrl(e.target.value)}
+              style={inputStyle}
+            />
+          )}
 
           {/* Keywords Input */}
           <input
             type="text"
-            placeholder="Keywords"
+            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : "Blog Keywords"}
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             style={inputStyle}
@@ -168,15 +216,19 @@ export default function Home() {
             }}
             disabled={loading}
           >
-            {loading ? 'Generating & Publishing...' : 'Generate & Publish Blog'}
+            {loading ? 'Processing...' : mode === 'generate' ? 'Generate & Publish Blog' : 'Scrape, Generate & Publish'}
           </button>
         </form>
         {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
-        {content && (
+        {content && Array.isArray(content) && content.length > 0 && (
           <div style={{ marginTop: '2rem' }}>
-            <h2>Generated Blog:</h2>
-            <h3>{content.title}</h3>
-            <p>{content.body_html}</p>
+            <h2>Generated Blogs ({content.length}):</h2>
+            {content.map((blog, index) => (
+              <div key={index} style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #ddd' }}>
+                <h3>{blog.title}</h3>
+                <p><strong>Meta Description:</strong> {blog.metaDescription}</p>
+              </div>
+            ))}
           </div>
         )}
 
