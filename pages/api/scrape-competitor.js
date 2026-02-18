@@ -11,6 +11,15 @@ import { buildSmartLinkingDatabase, smartInsertInternalLinks, analyzeLinkOpportu
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Helper function to strip markdown code blocks from JSON string
+function extractJSON(response) {
+  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    return jsonMatch[1].trim();
+  }
+  return response.trim();
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -130,7 +139,7 @@ Generate a comprehensive blog post that:
       max_tokens: 4000,
     });
 
-    const generatedBlog = JSON.parse(openaiResponse.choices[0].message.content);
+    const generatedBlog = JSON.parse(extractJSON(openaiResponse.choices[0].message.content));
 
     // Step 3: Build blog HTML with internal links
     let blogHtml =
