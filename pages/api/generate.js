@@ -7,11 +7,33 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Helper function to strip markdown code blocks from JSON string
 function extractJSON(response) {
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    return jsonMatch[1].trim();
+  try {
+    // Try direct parse first
+    return JSON.parse(response);
+  } catch (e) {
+    // Try removing markdown code blocks
+    let cleaned = response.trim();
+    
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    
+    // Try parsing again
+    try {
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      // Try to find JSON object in the string
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          console.error("Failed to parse JSON:", jsonMatch[0].substring(0, 200));
+          throw new Error(`Invalid JSON response from AI: ${e3.message}`);
+        }
+      }
+      throw e2;
+    }
   }
-  return response.trim();
 }
 
 // Helper function to normalize blog content structure
@@ -322,7 +344,7 @@ Format the output as a JSON object with keys:
       max_tokens: 4000,
     });
 
-    const result = normalizeBlogContent(JSON.parse(extractJSON(response.choices[0].message.content)));
+    const result = normalizeBlogContent(extractJSON(response.choices[0].message.content));
 
     console.log("Publishing blog post to Shopify...");
 

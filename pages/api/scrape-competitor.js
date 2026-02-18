@@ -13,11 +13,33 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Helper function to strip markdown code blocks from JSON string
 function extractJSON(response) {
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    return jsonMatch[1].trim();
+  try {
+    // Try direct parse first
+    return JSON.parse(response);
+  } catch (e) {
+    // Try removing markdown code blocks
+    let cleaned = response.trim();
+    
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+    
+    // Try parsing again
+    try {
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      // Try to find JSON object in the string
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          console.error("Failed to parse JSON:", jsonMatch[0].substring(0, 200));
+          throw new Error(`Invalid JSON response from AI: ${e3.message}`);
+        }
+      }
+      throw e2;
+    }
   }
-  return response.trim();
 }
 
 // Helper function to normalize blog content structure
@@ -183,15 +205,14 @@ Generate a comprehensive blog post that:
       max_tokens: 4000,
     });
 
-    const generatedBlog = JSON.parse(extractJSON(openaiResponse.choices[0].message.content));
-    const normalizedBlog = normalizeBlogContent(generatedBlog);
+    const generatedBlog = normalizeBlogContent(extractJSON(openaiResponse.choices[0].message.content));
 
     // Step 4: Build blog HTML with internal links
     const sourceLinks = sources.map(s => `<a href="${s.url}" target="_blank">${s.title}</a>`).join(", ");
     let blogHtml =
       `<div class="blog-attribution">This content was inspired by research including: ${sourceLinks}</div>` +
-      `<p>${normalizedBlog.intro}</p>` +
-      normalizedBlog.mainContent
+      `<p>${generatedBlog.intro}</p>` +
+      generatedBlog.mainContent
         .map((section) => {
           let numberedItems = Array.isArray(section.content) ? section.content
             .filter((c) => c && c.type === "numbered")
@@ -213,10 +234,10 @@ Generate a comprehensive blog post that:
           );
         })
         .join("") +
-      `<h2>${normalizedBlog.outro.heading}</h2><p>${normalizedBlog.outro.paragraph}</p>` +
-      (normalizedBlog.faqs && normalizedBlog.faqs.length > 0
+      `<h2>${generatedBlog.outro.heading}</h2><p>${generatedBlog.outro.paragraph}</p>` +
+      (generatedBlog.faqs && generatedBlog.faqs.length > 0
         ? `<h2>Frequently Asked Questions:</h2>` +
-          normalizedBlog.faqs
+          generatedBlog.faqs
             .map(
               (faq) =>
                 `<div><h3>${faq.question || ""}</h3><p>${faq.answer || ""}</p></div>`
