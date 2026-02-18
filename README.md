@@ -61,13 +61,13 @@ Create completely new, original blog posts from scratch.
 - **Example**: Enter "coffee brewing,espresso" to generate 2 blogs
 
 ### Mode 2: 🔍 Scrape & Repurpose
-Analyze competitor blogs and generate unique variations.
-- **Inputs**: Competitor Blog URL + Keywords + Author Name
-- **Output**: Original content inspired by competitor research
+Analyze competitor blogs and generate unique variations from multiple sources.
+- **Inputs**: Competitor Blog URLs (comma-separated) + Keywords + Author Name
+- **Output**: Original content inspired by competitor research (synthesized from all sources)
 - **Features**: 
-  - Extracts competitor content structure and links
-  - Uses AI to create completely unique content
-  - Includes attribution to original source
+  - Extracts content from multiple competitor sources
+  - Uses AI to create completely unique content combining insights from all sources
+  - Includes attribution to original sources
   - Maintains topic relevance with your keywords
 
 ## Development

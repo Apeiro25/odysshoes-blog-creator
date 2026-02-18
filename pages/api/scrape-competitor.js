@@ -16,39 +16,54 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { competitorUrl, keywords, author } = req.body;
+  const { competitorUrls, keywords, author } = req.body;
   const shopifyToken = process.env.SHOPIFY_API_TOKEN;
   const shopifyShop = process.env.SHOPIFY_SHOP;
   const blogId = process.env.SHOPIFY_BLOG_ID;
 
   // Validate inputs
-  if (!competitorUrl || !keywords || !author) {
+  if (!competitorUrls || !Array.isArray(competitorUrls) || competitorUrls.length === 0 || !keywords || !author) {
     return res.status(400).json({
-      error: "competitorUrl, keywords, and author are required",
+      error: "competitorUrls (array), keywords, and author are required",
     });
   }
 
   try {
-    console.log("Scraping competitor blog:", competitorUrl);
+    // Step 1: Scrape all competitor blogs
+    const scrapedContents = [];
+    const sources = [];
 
-    // Step 1: Scrape competitor blog
-    const scrapedContent = await scrapeCompetitorBlog(competitorUrl);
+    for (const url of competitorUrls) {
+      console.log("Scraping competitor blog:", url);
+      const scrapedContent = await scrapeCompetitorBlog(url);
 
-    if (!scrapedContent.success) {
+      if (scrapedContent.success) {
+        scrapedContents.push(scrapedContent);
+        sources.push({
+          url: url,
+          title: scrapedContent.title,
+          wordCount: scrapedContent.wordCount,
+          linksExtracted: scrapedContent.links.length,
+        });
+        console.log("Scraped content:", {
+          title: scrapedContent.title,
+          wordCount: scrapedContent.wordCount,
+          linksFound: scrapedContent.links.length,
+        });
+      } else {
+        console.warn("Failed to scrape:", url, scrapedContent.error);
+      }
+    }
+
+    if (scrapedContents.length === 0) {
       return res.status(400).json({
-        error: "Failed to scrape competitor blog",
-        details: scrapedContent.error,
+        error: "Failed to scrape any of the competitor blogs",
       });
     }
 
-    console.log("Scraped content:", {
-      title: scrapedContent.title,
-      wordCount: scrapedContent.wordCount,
-      linksFound: scrapedContent.links.length,
-    });
-
-    // Step 2: Generate unique content based on scraped content
-    const uniquenessPrompt = generateUniquenessPrompt(scrapedContent.body, keywords);
+    // Step 2: Generate unique content based on all scraped content
+    const combinedContent = scrapedContents.map(c => c.body).join("\n\n---\n\n");
+    const uniquenessPrompt = generateUniquenessPrompt(combinedContent, keywords);
 
     console.log("Generating unique content from competitor research...");
 
@@ -160,12 +175,8 @@ Generate a comprehensive blog post that:
 
     res.status(200).json({
       success: true,
-      scrapedSource: {
-        url: competitorUrl,
-        title: scrapedContent.title,
-        wordCount: scrapedContent.wordCount,
-        linksExtracted: scrapedContent.links.length,
-      },
+      sourceBlogs: sources,
+      sourcesAnalyzed: scrapedContents.length,
       generatedBlog: {
         title: generatedBlog.title,
         metaDescription: generatedBlog.metaDescription,

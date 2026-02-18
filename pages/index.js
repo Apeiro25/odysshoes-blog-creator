@@ -111,7 +111,7 @@ export default function Home() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            competitorUrl, 
+            competitorUrls: competitorUrl.split(',').map(url => url.trim()).filter(url => url),
             keywords, 
             author 
           }),
@@ -173,14 +173,13 @@ export default function Home() {
         </div>
 
         <form onSubmit={generateBlog}>
-          {/* Competitor URL - Only shown in scrape mode */}
+          {/* Competitor URLs - Only shown in scrape mode */}
           {mode === 'scrape' && (
-            <input
-              type="url"
-              placeholder="Competitor Blog URL (e.g., https://example.com/blog/post)"
+            <textarea
+              placeholder="Competitor Blog URLs (comma-separated, e.g., https://example1.com/blog, https://example2.com/blog)"
               value={competitorUrl}
               onChange={(e) => setCompetitorUrl(e.target.value)}
-              style={inputStyle}
+              style={{...inputStyle, minHeight: '80px', fontFamily: 'monospace'}}
             />
           )}
 
