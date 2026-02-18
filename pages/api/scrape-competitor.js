@@ -67,10 +67,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { competitorUrls, keywords, author } = req.body;
-  const shopifyToken = process.env.SHOPIFY_API_TOKEN;
-  const shopifyShop = process.env.SHOPIFY_SHOP;
-  const blogId = process.env.SHOPIFY_BLOG_ID;
+  const { competitorUrls, keywords, author, shopifyToken: bodyToken, shopifyShop: bodyShop, shopifyBlogId: bodyBlogId } = req.body;
+  
+  // Prioritize request body credentials, fall back to environment variables
+  const shopifyToken = bodyToken || process.env.SHOPIFY_API_TOKEN;
+  const shopifyShop = bodyShop || process.env.SHOPIFY_SHOP;
+  const blogId = bodyBlogId || process.env.SHOPIFY_BLOG_ID;
 
   // Validate inputs - keywords are now optional
   if (!competitorUrls || !Array.isArray(competitorUrls) || competitorUrls.length === 0 || !author) {

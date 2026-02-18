@@ -234,13 +234,19 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Load Shopify credentials from environment variables (optional)
-  const shopifyToken = process.env.SHOPIFY_API_TOKEN;
-  const shopifyShop = process.env.SHOPIFY_SHOP;
-  const blogId = process.env.SHOPIFY_BLOG_ID;
+  // Load Shopify credentials from environment variables or request body (optional)
+  const envShopifyToken = process.env.SHOPIFY_API_TOKEN;
+  const envShopifyShop = process.env.SHOPIFY_SHOP;
+  const envShopifyBlogId = process.env.SHOPIFY_BLOG_ID;
 
   // Extract parameters from request body
-  const { keyword, author } = req.body;
+  const { keyword, author, shopifyToken: bodyToken, shopifyShop: bodyShop, shopifyBlogId: bodyBlogId } = req.body;
+  
+  // Prioritize request body credentials, fall back to environment variables
+  const shopifyToken = bodyToken || envShopifyToken;
+  const shopifyShop = bodyShop || envShopifyShop;
+  const blogId = bodyBlogId || envShopifyBlogId;
+  
   const keywords = keyword;
 
   // Debugging: Log the incoming request parameters

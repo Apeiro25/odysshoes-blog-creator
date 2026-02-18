@@ -12,11 +12,24 @@ export default function Home() {
   const [error, setError] = useState('');
   const [savedBlogs, setSavedBlogs] = useState([]);
   const [showBlogs, setShowBlogs] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [shopifyToken, setShopifyToken] = useState('');
+  const [shopifyShop, setShopifyShop] = useState('');
+  const [shopifyBlogId, setShopifyBlogId] = useState('');
 
   useEffect(() => {
     // Load saved blogs from local storage
     const blogs = JSON.parse(localStorage.getItem('savedBlogs')) || [];
     setSavedBlogs(blogs);
+    
+    // Load Shopify credentials from local storage
+    const token = localStorage.getItem('shopifyToken') || '';
+    const shop = localStorage.getItem('shopifyShop') || '';
+    const blogId = localStorage.getItem('shopifyBlogId') || '';
+    
+    setShopifyToken(token);
+    setShopifyShop(shop);
+    setShopifyBlogId(blogId);
   }, []);
 
   const inputStyle = {
@@ -53,12 +66,20 @@ export default function Home() {
   };
 
   const generateSlug = (title) => {
-  return title
-    .toLowerCase() // Convert to lowercase
-    .trim() // Remove whitespace from both ends
-    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric characters with dashes
-    .replace(/^-+|-+$/g, ''); // Remove leading or trailing dashes
-};
+    return title
+      .toLowerCase() // Convert to lowercase
+      .trim() // Remove whitespace from both ends
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric characters with dashes
+      .replace(/^-+|-+$/g, ''); // Remove leading or trailing dashes
+  };
+
+  const saveShopifyCredentials = () => {
+    localStorage.setItem('shopifyToken', shopifyToken);
+    localStorage.setItem('shopifyShop', shopifyShop);
+    localStorage.setItem('shopifyBlogId', shopifyBlogId);
+    alert('Shopify credentials saved!');
+    setShowSettings(false);
+  };
 
   const generateBlog = async (e) => {
     e.preventDefault();
@@ -91,7 +112,13 @@ export default function Home() {
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword, author }),
+            body: JSON.stringify({ 
+              keyword, 
+              author,
+              shopifyToken,
+              shopifyShop,
+              shopifyBlogId
+            }),
           });
 
           if (!response.ok) {
@@ -113,7 +140,10 @@ export default function Home() {
           body: JSON.stringify({ 
             competitorUrls: competitorUrl.split(',').map(url => url.trim()).filter(url => url),
             keywords, 
-            author 
+            author,
+            shopifyToken,
+            shopifyShop,
+            shopifyBlogId
           }),
         });
 
@@ -137,7 +167,77 @@ export default function Home() {
   return (
     <div style={centeredContainer}>
       <div style={cardStyle}>
-        <h1 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Blog Creator</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h1 style={{ textAlign: 'center', flex: 1, margin: 0 }}>Blog Creator</h1>
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#666',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '12px',
+            }}
+          >
+            ⚙️ Settings
+          </button>
+        </div>
+
+        {showSettings && (
+          <div style={{
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            border: '2px solid #0070f3',
+            borderRadius: '8px',
+            backgroundColor: '#f0f7ff',
+          }}>
+            <h3>Shopify Configuration</h3>
+            <input
+              type="text"
+              placeholder="Shopify API Token"
+              value={shopifyToken}
+              onChange={(e) => setShopifyToken(e.target.value)}
+              style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}
+            />
+            <input
+              type="text"
+              placeholder="Shop Name (e.g., odysshoes.myshopify.com)"
+              value={shopifyShop}
+              onChange={(e) => setShopifyShop(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Blog ID"
+              value={shopifyBlogId}
+              onChange={(e) => setShopifyBlogId(e.target.value)}
+              style={inputStyle}
+            />
+            <button
+              type="button"
+              onClick={saveShopifyCredentials}
+              style={{
+                backgroundColor: '#28a745',
+                color: '#fff',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%',
+                fontWeight: 'bold',
+              }}
+            >
+              Save Credentials
+            </button>
+            {shopifyToken && shopifyShop && shopifyBlogId && (
+              <p style={{ color: 'green', marginTop: '0.5rem', fontSize: '12px' }}>✓ Credentials configured</p>
+            )}
+          </div>
+        )}
         
         {/* Mode Selection */}
         <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
