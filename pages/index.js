@@ -6,7 +6,7 @@ export default function Home() {
   const [keywords, setKeywords] = useState('');
   const [author, setAuthor] = useState('');
   const [competitorUrl, setCompetitorUrl] = useState('');
-  const [mode, setMode] = useState('generate'); // 'generate' or 'scrape'
+  const [mode, setMode] = useState('generate'); // 'generate', 'scrape', or 'schedule'
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +16,10 @@ export default function Home() {
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyShop, setShopifyShop] = useState('');
   const [shopifyBlogId, setShopifyBlogId] = useState('');
+  const [scheduleTimes, setScheduleTimes] = useState('08:00,12:00,18:00');
+  const [activeJobs, setActiveJobs] = useState([]);
+  const [showActiveJobs, setShowActiveJobs] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState('');
 
   useEffect(() => {
     // Load saved blogs from local storage
@@ -30,7 +34,22 @@ export default function Home() {
     setShopifyToken(token);
     setShopifyShop(shop);
     setShopifyBlogId(blogId);
+
+    // Fetch active jobs on component mount
+    fetchActiveJobs();
   }, []);
+
+  const fetchActiveJobs = async () => {
+    try {
+      const response = await fetch('/api/stop-posting');
+      const data = await response.json();
+      if (data.activeJobs) {
+        setActiveJobs(data.activeJobs);
+      }
+    } catch (err) {
+      console.log('No active jobs or error fetching:', err.message);
+    }
+  };
 
   const inputStyle = {
     padding: '0.5rem',
@@ -79,6 +98,83 @@ export default function Home() {
     localStorage.setItem('shopifyBlogId', shopifyBlogId);
     alert('Shopify credentials saved!');
     setShowSettings(false);
+  };
+
+  const scheduleBlogs = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (!keywords || !keywords.trim()) {
+      setError('Keywords are required for scheduling.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const keywordList = keywords.split(',').map((kw) => kw.trim()).filter(kw => kw);
+      const timeList = scheduleTimes.split(',').map((t) => t.trim()).filter(t => t);
+
+      const response = await fetch('/api/schedule-posting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keywords: keywordList,
+          times: timeList,
+          shopifyToken,
+          shopifyShop,
+          shopifyBlogId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to schedule blogs');
+      }
+
+      const data = await response.json();
+      setContent(null);
+      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\nBlogs will post at: ${timeList.join(', ')}`);
+      setKeywords('');
+      setScheduleTimes('08:00,12:00,18:00');
+      
+      // Refresh active jobs list
+      await fetchActiveJobs();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stopScheduledJob = async (jobId) => {
+    if (!window.confirm('Are you sure you want to stop this scheduled posting job?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/stop-posting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to stop scheduled job');
+      }
+
+      alert('✓ Scheduled posting job stopped successfully!');
+      setSelectedJobId('');
+      
+      // Refresh active jobs list
+      await fetchActiveJobs();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const generateBlog = async (e) => {
@@ -240,7 +336,7 @@ export default function Home() {
         )}
         
         {/* Mode Selection */}
-        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setMode('generate')}
@@ -271,9 +367,24 @@ export default function Home() {
           >
             🔍 Scrape & Repurpose
           </button>
+          <button
+            type="button"
+            onClick={() => setMode('schedule')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: mode === 'schedule' ? '#0070f3' : '#ccc',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ⏰ Schedule Posting
+          </button>
         </div>
 
-        <form onSubmit={generateBlog}>
+        <form onSubmit={mode === 'schedule' ? scheduleBlogs : generateBlog}>
           {/* Competitor URLs - Only shown in scrape mode */}
           {mode === 'scrape' && (
             <textarea
@@ -287,20 +398,33 @@ export default function Home() {
           {/* Keywords Input */}
           <input
             type="text"
-            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : "Blog Keywords (optional - auto-detected if left blank)"}
+            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : mode === 'scrape' ? "Blog Keywords (optional - auto-detected if left blank)" : "Keywords for scheduling (comma-separated)"}
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             style={inputStyle}
           />
 
-          {/* Author Name Input */}
-          <input
-            type="text"
-            placeholder="Author Name"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            style={inputStyle}
-          />
+          {/* Schedule Times - Only shown in schedule mode */}
+          {mode === 'schedule' && (
+            <input
+              type="text"
+              placeholder="Posting times in HH:MM format (comma-separated, e.g., 08:00,12:00,18:00)"
+              value={scheduleTimes}
+              onChange={(e) => setScheduleTimes(e.target.value)}
+              style={{...inputStyle, fontFamily: 'monospace'}}
+            />
+          )}
+
+          {/* Author Name Input - Not shown in schedule mode */}
+          {mode !== 'schedule' && (
+            <input
+              type="text"
+              placeholder="Author Name"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              style={inputStyle}
+            />
+          )}
 
           <button
             type="submit"
@@ -316,10 +440,82 @@ export default function Home() {
             }}
             disabled={loading}
           >
-            {loading ? 'Processing...' : mode === 'generate' ? 'Generate & Publish Blog' : 'Scrape, Generate & Publish'}
+            {loading ? 'Processing...' : mode === 'generate' ? 'Generate & Publish Blog' : mode === 'scrape' ? 'Scrape, Generate & Publish' : 'Start Scheduled Posting'}
           </button>
         </form>
         {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+        
+        {/* Active Scheduled Jobs Section */}
+        {mode === 'schedule' && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowActiveJobs(!showActiveJobs);
+                if (!showActiveJobs) fetchActiveJobs();
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#ff9800',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                width: '100%',
+                fontWeight: 'bold',
+              }}
+            >
+              {showActiveJobs ? '▼ Hide Active Jobs' : '▶ View Active Jobs'} {activeJobs.length > 0 && `(${activeJobs.length})`}
+            </button>
+
+            {showActiveJobs && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                border: '2px solid #ff9800',
+                borderRadius: '8px',
+                backgroundColor: '#fff8f0',
+              }}>
+                {activeJobs.length > 0 ? (
+                  <div>
+                    {activeJobs.map((job) => (
+                      <div key={job.jobId} style={{
+                        marginBottom: '1rem',
+                        padding: '1rem',
+                        backgroundColor: '#fff',
+                        border: '1px solid #ff9800',
+                        borderRadius: '4px',
+                      }}>
+                        <p><strong>Job ID:</strong> <code style={{ fontSize: '11px', fontFamily: 'monospace', backgroundColor: '#f5f5f5', padding: '2px 4px' }}>{job.jobId}</code></p>
+                        <p><strong>Keywords:</strong> {job.keywords.join(', ')}</p>
+                        <p><strong>Posting Times:</strong> {job.times.join(', ')}</p>
+                        <p><strong>Created:</strong> {new Date(job.createdAt).toLocaleString()}</p>
+                        <button
+                          type="button"
+                          onClick={() => stopScheduledJob(job.jobId)}
+                          style={{
+                            padding: '0.4rem 0.8rem',
+                            backgroundColor: '#dc3545',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                          }}
+                        >
+                          ✕ Stop Job
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: '#666' }}>No active scheduled jobs.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {content && Array.isArray(content) && content.length > 0 && (
           <div style={{ marginTop: '2rem' }}>
             <h2>Generated Blogs ({content.length}):</h2>
