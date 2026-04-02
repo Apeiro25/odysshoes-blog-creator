@@ -78,12 +78,10 @@ export default function Home() {
   };
 
   const cardStyle = {
-    maxWidth: '500px',
-    margin: '0 auto',
     padding: '2rem',
     border: '1px solid #ddd',
-    borderRadius: '10px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
     backgroundColor: '#fff',
     fontFamily: 'Arial, sans-serif',
   };
@@ -279,37 +277,52 @@ export default function Home() {
   };
 
   return (
-    <div style={centeredContainer}>
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{ textAlign: 'center', flex: 1, margin: 0 }}>Blog Creator</h1>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '2rem' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <div>
+            <h1 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>📝 Blog Creator & Scheduler</h1>
+            <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>Generate, scrape, or schedule blog posts with AI</p>
+          </div>
           <button
             type="button"
             onClick={() => setShowSettings(!showSettings)}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.7rem 1.2rem',
               backgroundColor: '#666',
               color: '#fff',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              fontSize: '12px',
+              fontSize: '14px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
             ⚙️ Settings
           </button>
         </div>
 
+        {/* Main Container */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: mode === 'schedule' ? '1fr 1fr' : '1fr',
+          gap: '2rem',
+          maxWidth: '100%',
+        }}>
+          {/* Left Column - Input Form */}
+          <div style={cardStyle}>
+
         {showSettings && (
           <div style={{
             marginBottom: '1.5rem',
-            padding: '1rem',
+            padding: '1.5rem',
             border: '2px solid #0070f3',
             borderRadius: '8px',
             backgroundColor: '#f0f7ff',
           }}>
-            <h3>Shopify Configuration</h3>
+            <h3 style={{ marginTop: 0, color: '#0070f3' }}>🔐 Shopify Configuration</h3>
             <input
               type="text"
               placeholder="Shopify API Token"
@@ -338,78 +351,99 @@ export default function Home() {
                 backgroundColor: '#28a745',
                 color: '#fff',
                 border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
+                padding: '0.7rem 1rem',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 width: '100%',
                 fontWeight: 'bold',
+                fontSize: '14px',
               }}
             >
-              Save Credentials
+              💾 Save Credentials
             </button>
             {shopifyToken && shopifyShop && shopifyBlogId && (
-              <p style={{ color: 'green', marginTop: '0.5rem', fontSize: '12px' }}>✓ Credentials configured</p>
+              <p style={{ color: '#28a745', marginTop: '0.8rem', fontSize: '13px', fontWeight: 'bold' }}>✓ Credentials configured</p>
             )}
           </div>
         )}
-        
         {/* Mode Selection */}
-        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setMode('generate')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: mode === 'generate' ? '#0070f3' : '#ccc',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            ✨ Generate Blog
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('scrape')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: mode === 'scrape' ? '#0070f3' : '#ccc',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            🔍 Scrape & Repurpose
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('schedule')}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: mode === 'schedule' ? '#0070f3' : '#ccc',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            ⏰ Schedule Posting
-          </button>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.8rem 0', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>SELECT MODE:</p>
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setMode('generate')}
+              style={{
+                padding: '0.7rem 1.2rem',
+                backgroundColor: mode === 'generate' ? '#0070f3' : '#e0e0e0',
+                color: mode === 'generate' ? '#fff' : '#666',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                flex: '1',
+                minWidth: '120px',
+                transition: 'all 0.2s',
+              }}
+            >
+              ✨ Generate
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('scrape')}
+              style={{
+                padding: '0.7rem 1.2rem',
+                backgroundColor: mode === 'scrape' ? '#0070f3' : '#e0e0e0',
+                color: mode === 'scrape' ? '#fff' : '#666',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                flex: '1',
+                minWidth: '120px',
+                transition: 'all 0.2s',
+              }}
+            >
+              🔍 Scrape
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('schedule')}
+              style={{
+                padding: '0.7rem 1.2rem',
+                backgroundColor: mode === 'schedule' ? '#0070f3' : '#e0e0e0',
+                color: mode === 'schedule' ? '#fff' : '#666',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                flex: '1',
+                minWidth: '120px',
+                transition: 'all 0.2s',
+              }}
+            >
+              ⏰ Schedule
+            </button>
+          </div>
         </div>
 
         <form onSubmit={mode === 'schedule' ? scheduleBlogs : generateBlog}>
+          <h3 style={{ margin: '0 0 1rem 0', color: '#333', fontSize: '16px' }}>
+            {mode === 'generate' && '📝 Generate New Blog'}
+            {mode === 'scrape' && '🔗 Scrape & Repurpose'}
+            {mode === 'schedule' && '📅 Schedule Posting'}
+          </h3>
+
           {/* Competitor URLs - Only shown in scrape mode */}
           {mode === 'scrape' && (
             <textarea
               placeholder="Competitor Blog URLs (comma-separated, e.g., https://example1.com/blog, https://example2.com/blog)"
               value={competitorUrl}
               onChange={(e) => setCompetitorUrl(e.target.value)}
-              style={{...inputStyle, minHeight: '80px', fontFamily: 'monospace'}}
+              style={{...inputStyle, minHeight: '90px', fontFamily: 'monospace', fontSize: '12px'}}
             />
           )}
 
@@ -424,13 +458,16 @@ export default function Home() {
 
           {/* Schedule Times - Only shown in schedule mode */}
           {mode === 'schedule' && (
-            <input
-              type="text"
-              placeholder="Posting times in HH:MM format (comma-separated, e.g., 08:00,12:00,18:00)"
-              value={scheduleTimes}
-              onChange={(e) => setScheduleTimes(e.target.value)}
-              style={{...inputStyle, fontFamily: 'monospace'}}
-            />
+            <>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>Posting Times (24-hour format)</label>
+              <input
+                type="text"
+                placeholder="HH:MM format, comma-separated (e.g., 08:00,12:00,18:00)"
+                value={scheduleTimes}
+                onChange={(e) => setScheduleTimes(e.target.value)}
+                style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}
+              />
+            </>
           )}
 
           {/* Author Name Input - Not shown in schedule mode */}
@@ -447,22 +484,32 @@ export default function Home() {
           <button
             type="submit"
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.8rem 1.2rem',
               backgroundColor: '#0070f3',
               color: '#fff',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '6px',
               cursor: 'pointer',
               width: '100%',
               fontWeight: 'bold',
+              fontSize: '15px',
+              transition: 'background-color 0.2s',
+              opacity: loading ? 0.7 : 1,
             }}
             disabled={loading}
           >
-            {loading ? 'Processing...' : mode === 'generate' ? 'Generate & Publish Blog' : mode === 'scrape' ? 'Scrape, Generate & Publish' : 'Start Scheduled Posting'}
+            {loading ? '⏳ Processing...' : mode === 'generate' ? '🚀 Generate & Publish' : mode === 'scrape' ? '🚀 Scrape & Publish' : '🚀 Start Scheduler'}
           </button>
         </form>
-        {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: '#dc3545', marginTop: '1rem', padding: '1rem', backgroundColor: '#f8d7da', borderRadius: '6px', borderLeft: '4px solid #dc3545' }}>{error}</p>}
         
+        {/* Right Column - Active Jobs (only in schedule mode) */}
+        {mode === 'schedule' && activeJobs.length > 0 && (
+          </div>
+          <div style={cardStyle}>
+            <h3 style={{ marginTop: 0, color: '#ff9800', marginBottom: '1.5rem' }}>📊 Active Scheduled Jobs</h3>
+        )}
+
         {/* Active Scheduled Jobs Section */}
         {mode === 'schedule' && (
           <div style={{ marginTop: '1.5rem' }}>
@@ -473,23 +520,25 @@ export default function Home() {
                 if (!showActiveJobs) fetchActiveJobs();
               }}
               style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ff9800',
-                color: '#fff',
+                padding: '0.7rem 1rem',
+                backgroundColor: showActiveJobs ? '#ff9800' : '#e0e0e0',
+                color: showActiveJobs ? '#fff' : '#333',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 width: '100%',
                 fontWeight: 'bold',
+                fontSize: '14px',
+                transition: 'all 0.2s',
               }}
             >
-              {showActiveJobs ? '▼ Hide Active Jobs' : '▶ View Active Jobs'} {activeJobs.length > 0 && `(${activeJobs.length})`}
+              {showActiveJobs ? '▼ Hide Active Jobs' : '▶ View Active Jobs'} {activeJobs.length > 0 && <span style={{ marginLeft: '0.5rem', backgroundColor: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>({activeJobs.length})</span>}
             </button>
 
             {showActiveJobs && (
               <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
+                marginTop: '1.2rem',
+                padding: '1.2rem',
                 border: '2px solid #ff9800',
                 borderRadius: '8px',
                 backgroundColor: '#fff8f0',
@@ -498,25 +547,40 @@ export default function Home() {
                   <div>
                     {activeJobs.map((job) => (
                       <div key={job.jobId} style={{
-                        marginBottom: '1rem',
-                        padding: '1rem',
+                        marginBottom: '1.2rem',
+                        padding: '1.2rem',
                         backgroundColor: '#fff',
-                        border: '1px solid #ff9800',
-                        borderRadius: '4px',
+                        border: '1px solid #ffe0b2',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 4px rgba(255, 152, 0, 0.1)',
                       }}>
-                        <p><strong>Job ID:</strong> <code style={{ fontSize: '11px', fontFamily: 'monospace', backgroundColor: '#f5f5f5', padding: '2px 4px' }}>{job.jobId}</code></p>
-                        <p><strong>Keywords:</strong> {job.keywords.join(', ')}</p>
-                        <p><strong>Posting Times:</strong> {job.times.join(', ')}</p>
-                        <p><strong>Created:</strong> {new Date(job.createdAt).toLocaleString()}</p>
+                        {/* Job ID */}
+                        <div style={{ marginBottom: '0.8rem', paddingBottom: '0.8rem', borderBottom: '1px solid #ffe0b2' }}>
+                          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Job ID:</p>
+                          <code style={{ fontSize: '11px', fontFamily: 'monospace', backgroundColor: '#f5f5f5', padding: '4px 6px', borderRadius: '4px', display: 'block', marginTop: '0.3rem', wordBreak: 'break-all' }}>{job.jobId}</code>
+                        </div>
                         
+                        {/* Keywords */}
+                        <p style={{ margin: '0.6rem 0', fontSize: '13px' }}>
+                          <strong>Keywords:</strong> {job.keywords.join(', ')}
+                        </p>
+                        
+                        {/* Times */}
+                        <p style={{ margin: '0.6rem 0', fontSize: '13px' }}>
+                          <strong>Posting at:</strong> <span style={{ backgroundColor: '#e3f2fd', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>{job.times.join(', ')}</span>
+                        </p>
+
                         {/* Progress Bar */}
-                        <div style={{ marginBottom: '0.5rem' }}>
-                          <p><strong>Progress:</strong> {job.postedCount} / {job.totalKeywords} blogs posted</p>
+                        <div style={{ margin: '1rem 0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>Progress:</p>
+                            <span style={{ fontSize: '12px', color: '#0070f3', fontWeight: 'bold' }}>{job.postedCount} / {job.totalKeywords}</span>
+                          </div>
                           <div style={{
                             width: '100%',
-                            height: '20px',
+                            height: '24px',
                             backgroundColor: '#e0e0e0',
-                            borderRadius: '10px',
+                            borderRadius: '12px',
                             overflow: 'hidden',
                           }}>
                             <div style={{
@@ -528,28 +592,35 @@ export default function Home() {
                               alignItems: 'center',
                               justifyContent: 'center',
                               color: '#fff',
-                              fontSize: '12px',
+                              fontSize: '11px',
                               fontWeight: 'bold',
                             }}>
+                              {job.totalKeywords > 0 && `${Math.round((job.postedCount / job.totalKeywords) * 100)}%`}
                             </div>
                           </div>
                         </div>
 
+                        {/* Created at */}
+                        <p style={{ margin: '0.8rem 0 1rem 0', fontSize: '12px', color: '#999' }}>
+                          Created: {new Date(job.createdAt).toLocaleString()}
+                        </p>
+
                         {/* Buttons */}
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.6rem' }}>
                           <button
                             type="button"
                             onClick={() => fetchJobLogs(job.jobId)}
                             style={{
-                              padding: '0.4rem 0.8rem',
+                              padding: '0.5rem 0.8rem',
                               backgroundColor: '#0070f3',
                               color: '#fff',
                               border: 'none',
-                              borderRadius: '4px',
+                              borderRadius: '6px',
                               cursor: 'pointer',
                               fontWeight: 'bold',
                               fontSize: '12px',
                               flex: 1,
+                              transition: 'background-color 0.2s',
                             }}
                           >
                             📊 View Logs
@@ -558,25 +629,26 @@ export default function Home() {
                             type="button"
                             onClick={() => stopScheduledJob(job.jobId)}
                             style={{
-                              padding: '0.4rem 0.8rem',
+                              padding: '0.5rem 0.8rem',
                               backgroundColor: '#dc3545',
                               color: '#fff',
                               border: 'none',
-                              borderRadius: '4px',
+                              borderRadius: '6px',
                               cursor: 'pointer',
                               fontWeight: 'bold',
                               fontSize: '12px',
                               flex: 1,
+                              transition: 'background-color 0.2s',
                             }}
                           >
-                            ✕ Stop Job
+                            ⏹ Stop
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ color: '#666' }}>No active scheduled jobs.</p>
+                  <p style={{ color: '#999', margin: 0, textAlign: 'center', padding: '2rem 0' }}>No active scheduled jobs. Create one above!</p>
                 )}
               </div>
             )}
@@ -586,114 +658,140 @@ export default function Home() {
         {/* Job Logs Detailed View */}
         {showJobLogs && jobLogs && (
           <div style={{
-            marginTop: '1.5rem',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
             padding: '1rem',
-            border: '2px solid #0070f3',
-            borderRadius: '8px',
-            backgroundColor: '#f0f7ff',
           }}>
-            <button
-              type="button"
-              onClick={() => setShowJobLogs(false)}
-              style={{
-                padding: '0.4rem 0.8rem',
-                backgroundColor: '#666',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '12px',
-                marginBottom: '1rem',
-              }}
-            >
-              ✕ Close Logs
-            </button>
-
-            <h3 style={{ marginTop: 0 }}>📊 Job Logs - {jobLogs.jobId}</h3>
-            
-            {/* Summary */}
             <div style={{
-              padding: '1rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              padding: '2rem',
+              border: '2px solid #0070f3',
+              borderRadius: '12px',
               backgroundColor: '#fff',
-              border: '1px solid #0070f3',
-              borderRadius: '4px',
-              marginBottom: '1rem',
+              overflow: 'auto',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
             }}>
-              <p><strong>Status:</strong> <span style={{ color: jobLogs.status === 'completed' ? '#28a745' : '#0070f3', fontWeight: 'bold' }}>{jobLogs.status === 'completed' ? '✓ Completed' : '⏱ Running'}</span></p>
-              <p><strong>Total Keywords:</strong> {jobLogs.summary.totalKeywords}</p>
-              <p><strong>Successfully Posted:</strong> {jobLogs.summary.successfulPosts}</p>
-              <p><strong>Failed Posts:</strong> {jobLogs.summary.failedPosts > 0 ? <span style={{ color: '#dc3545' }}>{jobLogs.summary.failedPosts}</span> : 0}</p>
-              <p><strong>Completion:</strong> {jobLogs.summary.percentageComplete}%</p>
-              <div style={{
-                width: '100%',
-                height: '20px',
-                backgroundColor: '#e0e0e0',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                marginTop: '0.5rem',
-              }}>
-                <div style={{
-                  height: '100%',
-                  backgroundColor: jobLogs.summary.allKeywordsPosted ? '#28a745' : '#0070f3',
-                  width: `${jobLogs.summary.percentageComplete}%`,
-                  transition: 'width 0.3s ease',
-                }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0, color: '#0070f3' }}>📊 Job Details & Logs</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowJobLogs(false)}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    backgroundColor: '#999',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                  }}
+                >
+                  ✕
+                </button>
               </div>
-              <p style={{ marginTop: '0.5rem', fontSize: '12px', color: '#666' }}>
-                Keywords Covered: {jobLogs.summary.keywordsCovered.join(', ') || 'None yet'}
-              </p>
-            </div>
 
-            {/* Posted Blogs List */}
-            <h4>Posted Blogs:</h4>
-            <div style={{
-              maxHeight: '300px',
-              overflowY: 'auto',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: '#fff',
-            }}>
-              {jobLogs.postedBlogs && jobLogs.postedBlogs.length > 0 ? (
-                <ul style={{ padding: '1rem', margin: 0 }}>
-                  {jobLogs.postedBlogs.map((blog, idx) => (
-                    <li key={idx} style={{
-                      marginBottom: '0.8rem',
-                      paddingBottom: '0.8rem',
-                      borderBottom: idx < jobLogs.postedBlogs.length - 1 ? '1px solid #eee' : 'none',
-                    }}>
-                      <p style={{ margin: '0 0 0.3rem 0' }}>
-                        <strong>{blog.keyword}</strong> 
-                        <span style={{
-                          marginLeft: '0.5rem',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          fontSize: '11px',
-                          fontWeight: 'bold',
-                          backgroundColor: blog.status === 'success' ? '#d4edda' : '#f8d7da',
-                          color: blog.status === 'success' ? '#155724' : '#721c24',
-                        }}>
-                          {blog.status === 'success' ? '✓ Success' : '✕ Failed'}
-                        </span>
-                      </p>
-                      <p style={{ margin: '0.2rem 0', fontSize: '12px', color: '#666' }}>
-                        {new Date(blog.timestamp).toLocaleString()}
-                      </p>
-                      {blog.title && <p style={{ margin: '0.2rem 0', fontSize: '12px' }}><strong>Title:</strong> {blog.title}</p>}
-                      {blog.error && <p style={{ margin: '0.2rem 0', fontSize: '12px', color: '#dc3545' }}><strong>Error:</strong> {blog.error}</p>}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p style={{ padding: '1rem', margin: 0, color: '#666' }}>No blogs posted yet.</p>
-              )}
+              {/* Summary */}
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#f0f7ff',
+                border: '1px solid #0070f3',
+                borderRadius: '8px',
+                marginBottom: '1.5rem',
+              }}>
+                <p style={{ margin: '0.4rem 0', fontSize: '14px' }}>
+                  <strong>Status:</strong> <span style={{ color: jobLogs.status === 'completed' ? '#28a745' : '#0070f3', fontWeight: 'bold', fontSize: '15px' }}>{jobLogs.status === 'completed' ? '✓ Completed' : '⏱ Running'}</span>
+                </p>
+                <p style={{ margin: '0.4rem 0', fontSize: '14px' }}><strong>Total Keywords:</strong> {jobLogs.summary.totalKeywords}</p>
+                <p style={{ margin: '0.4rem 0', fontSize: '14px' }}><strong>Successfully Posted:</strong> <span style={{ color: '#28a745', fontWeight: 'bold' }}>{jobLogs.summary.successfulPosts}</span></p>
+                {jobLogs.summary.failedPosts > 0 && (
+                  <p style={{ margin: '0.4rem 0', fontSize: '14px' }}><strong>Failed Posts:</strong> <span style={{ color: '#dc3545', fontWeight: 'bold' }}>{jobLogs.summary.failedPosts}</span></p>
+                )}
+                <p style={{ margin: '0.8rem 0 0.4rem 0', fontSize: '13px', fontWeight: 'bold' }}>Completion: {jobLogs.summary.percentageComplete}%</p>
+                <div style={{
+                  width: '100%',
+                  height: '24px',
+                  backgroundColor: '#e0e0e0',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    backgroundColor: jobLogs.summary.allKeywordsPosted ? '#28a745' : '#0070f3',
+                    width: `${jobLogs.summary.percentageComplete}%`,
+                    transition: 'width 0.3s ease',
+                  }} />
+                </div>
+                <p style={{ margin: '0.8rem 0 0 0', fontSize: '12px', color: '#666' }}>
+                  <strong>Keywords Covered:</strong> {jobLogs.summary.keywordsCovered.length > 0 ? jobLogs.summary.keywordsCovered.join(', ') : 'None yet'}
+                </p>
+              </div>
+
+              {/* Posted Blogs List */}
+              <h4 style={{ margin: '0 0 0.8rem 0', color: '#333' }}>📝 Posted Blogs ({jobLogs.postedBlogs?.length || 0})</h4>
+              <div style={{
+                maxHeight: '400px',
+                overflowY: 'auto',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                backgroundColor: '#f9f9f9',
+              }}>
+                {jobLogs.postedBlogs && jobLogs.postedBlogs.length > 0 ? (
+                  <ul style={{ padding: '1rem', margin: 0, listStyle: 'none' }}>
+                    {jobLogs.postedBlogs.map((blog, idx) => (
+                      <li key={idx} style={{
+                        marginBottom: '0.8rem',
+                        paddingBottom: '0.8rem',
+                        borderBottom: idx < jobLogs.postedBlogs.length - 1 ? '1px solid #eee' : 'none',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 0.3rem 0', fontWeight: 'bold', fontSize: '13px' }}>
+                              {blog.keyword}
+                            </p>
+                            <p style={{ margin: '0.2rem 0', fontSize: '11px', color: '#999' }}>
+                              {new Date(blog.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            backgroundColor: blog.status === 'success' ? '#d4edda' : '#f8d7da',
+                            color: blog.status === 'success' ? '#155724' : '#721c24',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {blog.status === 'success' ? '✓' : '✕'}
+                          </span>
+                        </div>
+                        {blog.title && <p style={{ margin: '0.3rem 0 0 0', fontSize: '12px', color: '#666' }}><strong>Title:</strong> {blog.title}</p>}
+                        {blog.error && <p style={{ margin: '0.3rem 0 0 0', fontSize: '12px', color: '#dc3545' }}><strong>Error:</strong> {blog.error}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ padding: '1.5rem', margin: 0, color: '#999', textAlign: 'center' }}>No blogs posted yet.</p>
+                )}
+              </div>
             </div>
           </div>
         )}
         
+        
         {content && Array.isArray(content) && content.length > 0 && (
           <div style={{ marginTop: '2rem' }}>
-            <h2>Generated Blogs ({content.length}):</h2>
+            <h2>✅ Generated Blogs ({content.length})</h2>
             {content.map((blog, index) => (
               <div key={index} style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #ddd' }}>
                 <h3>{blog.title}</h3>
@@ -707,59 +805,55 @@ export default function Home() {
           onClick={() => setShowBlogs(!showBlogs)}
           style={{
             marginTop: '1rem',
-            padding: '0.5rem 1rem',
+            padding: '0.7rem 1.2rem',
             backgroundColor: '#28a745',
             color: '#fff',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '6px',
             cursor: 'pointer',
             width: '100%',
             fontWeight: 'bold',
+            fontSize: '14px',
+            transition: 'background-color 0.2s',
           }}
         >
-          {showBlogs ? 'Hide Published Blogs' : 'View Published Blogs'}
+          {showBlogs ? '▼ Hide Published Blogs' : '▶ View Published Blogs'} {savedBlogs.length > 0 && `(${savedBlogs.length})`}
         </button>
 
         {showBlogs && (
-          <div style={{ marginTop: '2rem' }}>
-            <h3>Saved Blogs</h3>
+          <div style={{ marginTop: '1.5rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>📚 Saved Blogs</h3>
             {savedBlogs.length > 0 ? (
               <div
                 style={{
-                  maxHeight: '150px', // Limit height to 5 titles
-                  overflowY: 'scroll', // Enable scrolling for more titles
+                  maxHeight: '300px',
+                  overflowY: 'auto',
                   border: '1px solid #ddd',
-                  padding: '0.5rem',
-                  borderRadius: '4px',
+                  padding: '1rem',
+                  borderRadius: '8px',
                   backgroundColor: '#f9f9f9',
                 }}
               >
                 {savedBlogs.map((blog, index) => (
-                  <div key={index} style={{ marginBottom: '0.5rem' }}>
-                    <h4
-                      style={{
-                        fontSize: '14px', // Set the font size to 14px
-                        margin: '0', // Remove extra spacing
-                        lineHeight: '1.5', // Add readable spacing
-                      }}
+                  <div key={index} style={{ marginBottom: '0.8rem', paddingBottom: '0.8rem', borderBottom: index < savedBlogs.length - 1 ? '1px solid #eee' : 'none' }}>
+                    <a
+                      href={`https://odysshoes.com/blogs/news/${generateSlug(blog.title)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#0070f3', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px' }}
                     >
-                      <a
-                        href={`https://odysshoes.com/blogs/news/${generateSlug(blog.title)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#0070f3', textDecoration: 'none' }}
-                      >
-                        {blog.title}
-                      </a>
-                    </h4>
+                      {blog.title}
+                    </a>
                   </div>
                 ))}
               </div>
-) : (
-  <p>No blogs saved yet.</p>
-)}
+            ) : (
+              <p style={{ color: '#999', textAlign: 'center', margin: '2rem 0' }}>No blogs saved yet.</p>
+            )}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
