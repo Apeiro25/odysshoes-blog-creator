@@ -20,6 +20,8 @@ export default function Home() {
   const [activeJobs, setActiveJobs] = useState([]);
   const [showActiveJobs, setShowActiveJobs] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
+  const [jobLogs, setJobLogs] = useState(null);
+  const [showJobLogs, setShowJobLogs] = useState(false);
 
   useEffect(() => {
     // Load saved blogs from local storage
@@ -48,6 +50,22 @@ export default function Home() {
       }
     } catch (err) {
       console.log('No active jobs or error fetching:', err.message);
+    }
+  };
+
+  const fetchJobLogs = async (jobId) => {
+    try {
+      const response = await fetch(`/api/job-logs?jobId=${jobId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setJobLogs(data);
+        setShowJobLogs(true);
+      } else {
+        alert('Failed to fetch job logs');
+      }
+    } catch (err) {
+      console.error('Error fetching job logs:', err);
+      alert('Error fetching job logs');
     }
   };
 
@@ -490,22 +508,70 @@ export default function Home() {
                         <p><strong>Keywords:</strong> {job.keywords.join(', ')}</p>
                         <p><strong>Posting Times:</strong> {job.times.join(', ')}</p>
                         <p><strong>Created:</strong> {new Date(job.createdAt).toLocaleString()}</p>
-                        <button
-                          type="button"
-                          onClick={() => stopScheduledJob(job.jobId)}
-                          style={{
-                            padding: '0.4rem 0.8rem',
-                            backgroundColor: '#dc3545',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                            fontSize: '12px',
-                          }}
-                        >
-                          ✕ Stop Job
-                        </button>
+                        
+                        {/* Progress Bar */}
+                        <div style={{ marginBottom: '0.5rem' }}>
+                          <p><strong>Progress:</strong> {job.postedCount} / {job.totalKeywords} blogs posted</p>
+                          <div style={{
+                            width: '100%',
+                            height: '20px',
+                            backgroundColor: '#e0e0e0',
+                            borderRadius: '10px',
+                            overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              backgroundColor: job.postedCount === job.totalKeywords ? '#28a745' : '#0070f3',
+                              width: `${job.totalKeywords > 0 ? (job.postedCount / job.totalKeywords) * 100 : 0}%`,
+                              transition: 'width 0.3s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#fff',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                            }}>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => fetchJobLogs(job.jobId)}
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              backgroundColor: '#0070f3',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '12px',
+                              flex: 1,
+                            }}
+                          >
+                            📊 View Logs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => stopScheduledJob(job.jobId)}
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              backgroundColor: '#dc3545',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              fontSize: '12px',
+                              flex: 1,
+                            }}
+                          >
+                            ✕ Stop Job
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -516,6 +582,115 @@ export default function Home() {
             )}
           </div>
         )}
+        
+        {/* Job Logs Detailed View */}
+        {showJobLogs && jobLogs && (
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            border: '2px solid #0070f3',
+            borderRadius: '8px',
+            backgroundColor: '#f0f7ff',
+          }}>
+            <button
+              type="button"
+              onClick={() => setShowJobLogs(false)}
+              style={{
+                padding: '0.4rem 0.8rem',
+                backgroundColor: '#666',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '12px',
+                marginBottom: '1rem',
+              }}
+            >
+              ✕ Close Logs
+            </button>
+
+            <h3 style={{ marginTop: 0 }}>📊 Job Logs - {jobLogs.jobId}</h3>
+            
+            {/* Summary */}
+            <div style={{
+              padding: '1rem',
+              backgroundColor: '#fff',
+              border: '1px solid #0070f3',
+              borderRadius: '4px',
+              marginBottom: '1rem',
+            }}>
+              <p><strong>Status:</strong> <span style={{ color: jobLogs.status === 'completed' ? '#28a745' : '#0070f3', fontWeight: 'bold' }}>{jobLogs.status === 'completed' ? '✓ Completed' : '⏱ Running'}</span></p>
+              <p><strong>Total Keywords:</strong> {jobLogs.summary.totalKeywords}</p>
+              <p><strong>Successfully Posted:</strong> {jobLogs.summary.successfulPosts}</p>
+              <p><strong>Failed Posts:</strong> {jobLogs.summary.failedPosts > 0 ? <span style={{ color: '#dc3545' }}>{jobLogs.summary.failedPosts}</span> : 0}</p>
+              <p><strong>Completion:</strong> {jobLogs.summary.percentageComplete}%</p>
+              <div style={{
+                width: '100%',
+                height: '20px',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                marginTop: '0.5rem',
+              }}>
+                <div style={{
+                  height: '100%',
+                  backgroundColor: jobLogs.summary.allKeywordsPosted ? '#28a745' : '#0070f3',
+                  width: `${jobLogs.summary.percentageComplete}%`,
+                  transition: 'width 0.3s ease',
+                }} />
+              </div>
+              <p style={{ marginTop: '0.5rem', fontSize: '12px', color: '#666' }}>
+                Keywords Covered: {jobLogs.summary.keywordsCovered.join(', ') || 'None yet'}
+              </p>
+            </div>
+
+            {/* Posted Blogs List */}
+            <h4>Posted Blogs:</h4>
+            <div style={{
+              maxHeight: '300px',
+              overflowY: 'auto',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              backgroundColor: '#fff',
+            }}>
+              {jobLogs.postedBlogs && jobLogs.postedBlogs.length > 0 ? (
+                <ul style={{ padding: '1rem', margin: 0 }}>
+                  {jobLogs.postedBlogs.map((blog, idx) => (
+                    <li key={idx} style={{
+                      marginBottom: '0.8rem',
+                      paddingBottom: '0.8rem',
+                      borderBottom: idx < jobLogs.postedBlogs.length - 1 ? '1px solid #eee' : 'none',
+                    }}>
+                      <p style={{ margin: '0 0 0.3rem 0' }}>
+                        <strong>{blog.keyword}</strong> 
+                        <span style={{
+                          marginLeft: '0.5rem',
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          backgroundColor: blog.status === 'success' ? '#d4edda' : '#f8d7da',
+                          color: blog.status === 'success' ? '#155724' : '#721c24',
+                        }}>
+                          {blog.status === 'success' ? '✓ Success' : '✕ Failed'}
+                        </span>
+                      </p>
+                      <p style={{ margin: '0.2rem 0', fontSize: '12px', color: '#666' }}>
+                        {new Date(blog.timestamp).toLocaleString()}
+                      </p>
+                      {blog.title && <p style={{ margin: '0.2rem 0', fontSize: '12px' }}><strong>Title:</strong> {blog.title}</p>}
+                      {blog.error && <p style={{ margin: '0.2rem 0', fontSize: '12px', color: '#dc3545' }}><strong>Error:</strong> {blog.error}</p>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ padding: '1rem', margin: 0, color: '#666' }}>No blogs posted yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+        
         {content && Array.isArray(content) && content.length > 0 && (
           <div style={{ marginTop: '2rem' }}>
             <h2>Generated Blogs ({content.length}):</h2>

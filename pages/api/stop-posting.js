@@ -1,4 +1,5 @@
 import { jobManager } from "../../utils/jobManager.js";
+import { logManager } from "../../utils/logManager.js";
 
 export default async function handler(req, res) {
   // Allow both POST and GET requests for flexibility
@@ -11,12 +12,20 @@ export default async function handler(req, res) {
   // If no jobId provided, show available jobs
   if (!jobId) {
     const allJobs = jobManager.getAllJobs();
-    const jobList = Object.entries(allJobs).map(([id, details]) => ({
-      jobId: id,
-      keywords: details.keywords,
-      times: details.times,
-      createdAt: details.createdAt,
-    }));
+    const allLogs = logManager.getAllLogs();
+    
+    const jobList = Object.entries(allJobs).map(([id, details]) => {
+      const logs = allLogs[id] || {};
+      const postedKeywords = logManager.getPostedKeywords(id);
+      return {
+        jobId: id,
+        keywords: details.keywords,
+        times: details.times,
+        createdAt: details.createdAt,
+        postedCount: logs.postedBlogs?.filter((b) => b.status === "success").length || 0,
+        totalKeywords: details.keywords.length,
+      };
+    });
 
     return res.status(200).json({
       message: "Active scheduled posting jobs",
@@ -35,7 +44,11 @@ export default async function handler(req, res) {
     const job = jobManager.getJob(jobId);
 
     if (!job) {
-      return res.status(404).json({ error: `Job not found: ${jobId}` });
+      return res.status(404).json({ 
+        error: `Job not found: ${jobId}`,
+        hint: "The job may have already been stopped or completed, or the server was restarted.",
+        availableJobs: Object.keys(jobManager.getAllJobs()),
+      });
     }
 
     // Stop all cron tasks associated with this job
@@ -43,6 +56,9 @@ export default async function handler(req, res) {
       task.stop();
       task.destroy();
     }
+
+    // Mark as completed in logs
+    logManager.markJobCompleted(jobId);
 
     // Remove job from manager
     jobManager.removeJob(jobId);

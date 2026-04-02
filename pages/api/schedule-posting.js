@@ -1,8 +1,9 @@
 import cron from "node-cron";
 import { jobManager } from "../../utils/jobManager.js";
+import { logManager } from "../../utils/logManager.js";
 
 // Function to generate and post blog
-async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId) {
+async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, jobId) {
   try {
     const response = await fetch("http://localhost:3000/api/generate", {
       method: "POST",
@@ -19,16 +20,25 @@ async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId) {
     });
 
     if (!response.ok) {
-      console.error(`Failed to generate blog for keyword: ${keyword}`, await response.text());
+      const errorText = await response.text();
+      console.error(`Failed to generate blog for keyword: ${keyword}`, errorText);
+      logManager.addBlogLog(jobId, keyword, "failed", { error: errorText });
       return false;
     }
 
     const data = await response.json();
     console.log(`Successfully generated and posted blog for keyword: ${keyword}`);
-    console.log("Generated blog:", data);
+    
+    // Log successful posting
+    logManager.addBlogLog(jobId, keyword, "success", {
+      title: data.blog?.title || "N/A",
+      imageUrl: data.imageUrl || "N/A",
+    });
+
     return true;
   } catch (error) {
     console.error(`Error generating and posting blog for keyword: ${keyword}`, error);
+    logManager.addBlogLog(jobId, keyword, "failed", { error: error.message });
     return false;
   }
 }
@@ -86,11 +96,47 @@ export default async function handler(req, res) {
       const task = cron.schedule(cronExpression, async () => {
         console.log(`[${jobId}] Cron job triggered at ${time}`);
 
-        // Rotate through keywords for variety
-        const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+        // Check if all keywords have already been posted
+        const postedKeywords = logManager.getPostedKeywords(jobId);
+        const allKeywordsPosted = keywords.every((kw) =>
+          postedKeywords.includes(kw)
+        );
 
-        console.log(`Generating blog post for keyword: ${randomKeyword}`);
-        await generateAndPostBlog(randomKeyword, shopifyShop, shopifyToken, shopifyBlogId);
+        if (allKeywordsPosted) {
+          console.log(
+            `[${jobId}] All keywords have been successfully posted. Auto-stopping job...`
+          );
+          logManager.markJobCompleted(jobId);
+
+          // Stop all tasks
+          for (const { task: t } of scheduledTasks) {
+            t.stop();
+            t.destroy();
+          }
+
+          jobManager.removeJob(jobId);
+          return;
+        }
+
+        // Rotate through keywords, pick those not yet posted
+        const keywordsToPick = keywords.filter(
+          (kw) => !postedKeywords.includes(kw)
+        );
+        const selectedKeyword =
+          keywordsToPick.length > 0
+            ? keywordsToPick[Math.floor(Math.random() * keywordsToPick.length)]
+            : keywords[Math.floor(Math.random() * keywords.length)];
+
+        console.log(
+          `[${jobId}] Generating blog post for keyword: ${selectedKeyword}`
+        );
+        await generateAndPostBlog(
+          selectedKeyword,
+          shopifyShop,
+          shopifyToken,
+          shopifyBlogId,
+          jobId
+        );
       });
 
       scheduledTasks.push({ time, task });
