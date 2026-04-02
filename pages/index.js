@@ -503,14 +503,7 @@ export default function Home() {
         </form>
         {error && <p style={{ color: '#dc3545', marginTop: '1rem', padding: '1rem', backgroundColor: '#f8d7da', borderRadius: '6px', borderLeft: '4px solid #dc3545' }}>{error}</p>}
         
-        {/* Right Column - Active Jobs (only in schedule mode) */}
-        {mode === 'schedule' && activeJobs.length > 0 && (
-          </div>
-          <div style={cardStyle}>
-            <h3 style={{ marginTop: 0, color: '#ff9800', marginBottom: '1.5rem' }}>📊 Active Scheduled Jobs</h3>
-        )}
-
-        {/* Active Scheduled Jobs Section */}
+        {/* Active Scheduled Jobs Section - Inline */}
         {mode === 'schedule' && (
           <div style={{ marginTop: '1.5rem' }}>
             <button
