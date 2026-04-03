@@ -4,6 +4,7 @@ import next from 'next';
 import { restoreActiveJobs } from './utils/jobRestoration.js';
 import { jobManager } from './utils/jobManager.js';
 
+// Initialize server with job restoration
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
