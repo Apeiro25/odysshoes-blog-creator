@@ -16,7 +16,7 @@ async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, j
       },
       body: JSON.stringify({
         keyword,
-        author: "Scheduled Bot",
+        author: "Mae Kyla Morcilla",
         shopifyToken,
         shopifyShop,
         shopifyBlogId: blogId,
