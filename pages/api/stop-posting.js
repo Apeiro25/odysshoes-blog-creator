@@ -60,8 +60,8 @@ export default async function handler(req, res) {
     // Mark as completed in logs
     logManager.markJobCompleted(jobId);
 
-    // Remove job from manager
-    jobManager.removeJob(jobId);
+    // Remove job from manager and Supabase
+    await jobManager.removeJob(jobId);
 
     console.log(`Stopped scheduled posting job: ${jobId}`);
 

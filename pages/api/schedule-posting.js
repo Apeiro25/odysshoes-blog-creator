@@ -1,6 +1,10 @@
 import cron from "node-cron";
 import { jobManager } from "../../utils/jobManager.js";
 import { logManager } from "../../utils/logManager.js";
+import { restoreActiveJobs } from "../../utils/jobRestoration.js";
+
+// Flag to track if restoration has been attempted
+let hasAttemptedRestoration = false;
 
 // Function to generate and post blog
 async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, jobId) {
@@ -47,6 +51,18 @@ export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
+  }
+
+  // Attempt to restore jobs on first API call (fallback if custom server wasn't used)
+  if (!hasAttemptedRestoration) {
+    hasAttemptedRestoration = true;
+    try {
+      console.log("Attempting to restore active jobs from disk...");
+      await restoreActiveJobs();
+    } catch (error) {
+      console.warn("Failed to restore jobs, continuing:", error.message);
+      // Don't fail the request, just log the warning
+    }
   }
 
   const {
@@ -142,13 +158,14 @@ export default async function handler(req, res) {
       scheduledTasks.push({ time, task });
     }
 
-    // Store job info in global job manager
-    jobManager.addJob(jobId, {
+    // Store job info in global job manager and persist to Supabase
+    await jobManager.addJob(jobId, {
       keywords,
       times,
       scheduledTasks,
       shopifyShop,
       shopifyBlogId,
+      shopifyToken,
       createdAt: new Date().toISOString(),
     });
 

@@ -93,6 +93,36 @@ Analyze competitor blogs and generate unique variations from multiple sources.
    npm start
    ```
 
+## Scheduled Blog Posting (✨ Now on Supabase!)
+
+The application supports automated, scheduled blog posting to Shopify. **Jobs are now persistent in Supabase Cloud Database** and work 24/7 on Vercel!
+
+### Key Features
+- ✅ **Cloud Persistence** - Jobs persist in Supabase (survive restarts, deploys, shutdowns)
+- ✅ **24/7 on Vercel** - Works automatically, no laptop needed
+- ✅ **Free Tier** - Supabase free plan is plenty for your needs
+- ✅ **Auto-Restoration** - Jobs automatically restore after server restart
+- ✅ **Easy Management** - API endpoints to check status and manage jobs
+
+### Scheduling Blogs
+- Use `/api/schedule-posting` to create scheduled posting jobs
+- Specify keywords, posting times (HH:MM format), and Shopify credentials
+- Blogs are automatically generated and posted at scheduled times
+- Jobs are saved to Supabase and restore automatically
+
+### Managing Scheduled Jobs
+- **View status**: `GET /api/job-restore` - See all active jobs
+- **Restore jobs**: `POST /api/job-restore?action=restore` - Manually trigger restoration
+- **Stop jobs**: Use `/api/stop-posting` with the job ID
+
+### Database
+Jobs are stored in Supabase (`scheduled_jobs` table) with:
+- Job ID, keywords, posting times
+- Shopify store credentials
+- Creation timestamp
+
+**See [JOB_PERSISTENCE_GUIDE.md](JOB_PERSISTENCE_GUIDE.md)** for complete setup and usage instructions.
+
 ## How It Works
 
 ### Complete Blog Generation Pipeline
