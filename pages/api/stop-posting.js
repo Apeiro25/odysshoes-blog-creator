@@ -1,5 +1,6 @@
 import { jobManager } from "../../utils/jobManager.js";
 import { logManager } from "../../utils/logManager.js";
+import { jobDatabase } from "../../utils/supabaseClient.js";
 
 export default async function handler(req, res) {
   // Allow both POST and GET requests for flexibility
@@ -11,10 +12,39 @@ export default async function handler(req, res) {
 
   // If no jobId provided, show available jobs
   if (!jobId) {
-    const allJobs = jobManager.getAllJobs();
+    let allJobs = jobManager.getAllJobs();
     const allLogs = logManager.getAllLogs();
     
     console.log("[API] Current jobs in memory:", Object.keys(allJobs));
+    
+    // If no jobs in memory, load from Supabase
+    if (Object.keys(allJobs).length === 0) {
+      console.log("[API] No jobs in memory, loading from Supabase...");
+      try {
+        const jobsFromDb = await jobDatabase.getAllJobs();
+        console.log("[API] Found jobs in Supabase:", jobsFromDb.map(j => j.id));
+        
+        // Populate jobManager with jobs from database
+        for (const job of jobsFromDb) {
+          const jobData = {
+            keywords: job.keywords,
+            times: job.times,
+            shopifyShop: job.shopify_shop,
+            shopifyBlogId: job.shopify_blog_id,
+            shopifyToken: job.shopify_token,
+            createdAt: job.created_at,
+            scheduledTasks: [], // Empty - we're just loading for display
+          };
+          await jobManager.addJob(job.id, jobData);
+        }
+        
+        // Get updated jobs
+        allJobs = jobManager.getAllJobs();
+        console.log("[API] Jobs now in memory:", Object.keys(allJobs));
+      } catch (dbError) {
+        console.error("[API] Error loading jobs from Supabase:", dbError);
+      }
+    }
     
     const jobList = Object.entries(allJobs).map(([id, details]) => {
       console.log(`[API] Processing job ${id}:`, details);
