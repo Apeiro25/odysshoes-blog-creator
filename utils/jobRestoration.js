@@ -1,13 +1,23 @@
 import cron from "node-cron";
 import { jobManager } from "./jobManager.js";
 import { logManager } from "./logManager.js";
+import { blogDatabase } from "./blogDatabase.js";
+import { generateKeywords } from "./keywordGenerator.js";
 
 let isRestoringJobs = false;
 
 // Function to generate and post blog (copy from schedule-posting.js)
 async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, jobId) {
   try {
-    const response = await fetch("http://localhost:3000/api/generate", {
+    // Determine the API URL based on environment
+    const apiUrl =
+      process.env.NODE_ENV === "production"
+        ? `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:3000"}/api/generate`
+        : "http://localhost:3000/api/generate";
+
+    console.log(`[${jobId}] API URL: ${apiUrl}`);
+
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -30,7 +40,22 @@ async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, j
 
     const data = await response.json();
     console.log(`Successfully generated and posted blog for keyword: ${keyword}`);
-    
+
+    // Track the published blog and keyword relationship
+    try {
+      await blogDatabase.addPublishedBlog(jobId, keyword, {
+        title: data.blog?.title || "N/A",
+        slug: data.blog?.slug || "",
+        imageUrl: data.imageUrl || "N/A",
+        metaDescription: data.blog?.metaDescription || "",
+        intro: data.blog?.intro || "",
+        shopifyPostId: data.shopifyPostId || null,
+      });
+    } catch (dbError) {
+      console.error("Failed to track published blog:", dbError);
+      // Don't fail the posting if tracking fails
+    }
+
     logManager.addBlogLog(jobId, keyword, "success", {
       title: data.blog?.title || "N/A",
       imageUrl: data.imageUrl || "N/A",
@@ -56,42 +81,90 @@ function restoreJobTasks(jobId, jobData) {
     console.log(`[RESTORATION] Re-scheduling cron job for time: ${time} (cron: ${cronExpression})`);
 
     const task = cron.schedule(cronExpression, async () => {
-      console.log(`[${jobId}] Restored cron job triggered at ${time}`);
+      console.log(`[${jobId}] Cron job triggered at ${time}`);
 
-      const postedKeywords = logManager.getPostedKeywords(jobId);
-      const allKeywordsPosted = keywords.every((kw) =>
-        postedKeywords.includes(kw)
-      );
+      try {
+        // Get current job data
+        const currentJob = jobManager.getJob(jobId);
+        let currentKeywords = currentJob?.keywords || keywords;
 
-      if (allKeywordsPosted) {
-        console.log(`[${jobId}] All keywords have been successfully posted. Auto-stopping job...`);
-        logManager.markJobCompleted(jobId);
+        // Get used keywords from database
+        const usedKeywords = await blogDatabase.getUsedKeywords(jobId);
+        console.log(`[${jobId}] Already used ${usedKeywords.length} keywords`);
 
-        for (const { task: t } of scheduledTasks) {
-          t.stop();
-          t.destroy();
+        // Filter out already used keywords
+        const availableKeywords = currentKeywords.filter(
+          (kw) => !usedKeywords.some((used) => used.toLowerCase() === kw.toLowerCase())
+        );
+
+        let selectedKeyword = null;
+
+        if (availableKeywords.length > 0) {
+          // Pick from available keywords
+          selectedKeyword =
+            availableKeywords[Math.floor(Math.random() * availableKeywords.length)];
+          console.log(
+            `[${jobId}] Selected keyword from pool: ${selectedKeyword} (${availableKeywords.length} remaining)`
+          );
+        } else {
+          // All keywords exhausted - generate new ones
+          console.log(`[${jobId}] All keywords exhausted! Auto-generating new keywords...`);
+
+          try {
+            const newKeywords = await generateKeywords(
+              currentKeywords.slice(0, 5), // Use first 5 as reference
+              usedKeywords,
+              "shoes", // niche
+              10 // generate 10 new keywords
+            );
+
+            if (newKeywords && newKeywords.length > 0) {
+              // Update job with new keywords
+              currentJob.keywords = [...currentKeywords, ...newKeywords];
+              jobManager.addJob(jobId, currentJob);
+
+              console.log(`[${jobId}] Generated and added ${newKeywords.length} new keywords`);
+
+              // Pick from new keywords
+              selectedKeyword =
+                newKeywords[Math.floor(Math.random() * newKeywords.length)];
+              console.log(`[${jobId}] Selected keyword from new batch: ${selectedKeyword}`);
+            } else {
+              // Fallback: pick random from original keywords
+              console.warn(`[${jobId}] Failed to generate new keywords, using fallback`);
+              selectedKeyword =
+                currentKeywords[Math.floor(Math.random() * currentKeywords.length)];
+            }
+          } catch (genError) {
+            console.error(`[${jobId}] Error generating keywords:`, genError);
+            // Fallback: pick random from original keywords
+            selectedKeyword =
+              currentKeywords[Math.floor(Math.random() * currentKeywords.length)];
+          }
         }
 
-        jobManager.removeJob(jobId);
-        return;
+        if (selectedKeyword) {
+          // Check for duplicate keyword posting
+          const isDuplicate = await blogDatabase.checkDuplicateKeyword(selectedKeyword);
+          if (isDuplicate) {
+            console.warn(
+              `[${jobId}] Keyword "${selectedKeyword}" already has a published blog, skipping...`
+            );
+            return;
+          }
+
+          console.log(`[${jobId}] Generating blog post for keyword: ${selectedKeyword}`);
+          await generateAndPostBlog(
+            selectedKeyword,
+            shopifyShop,
+            shopifyToken,
+            shopifyBlogId,
+            jobId
+          );
+        }
+      } catch (error) {
+        console.error(`[${jobId}] Error in cron task:`, error);
       }
-
-      const keywordsToPick = keywords.filter(
-        (kw) => !postedKeywords.includes(kw)
-      );
-      const selectedKeyword =
-        keywordsToPick.length > 0
-          ? keywordsToPick[Math.floor(Math.random() * keywordsToPick.length)]
-          : keywords[Math.floor(Math.random() * keywords.length)];
-
-      console.log(`[${jobId}] Generating blog post for keyword: ${selectedKeyword}`);
-      await generateAndPostBlog(
-        selectedKeyword,
-        shopifyShop,
-        shopifyToken,
-        shopifyBlogId,
-        jobId
-      );
     });
 
     scheduledTasks.push({ time, task });
