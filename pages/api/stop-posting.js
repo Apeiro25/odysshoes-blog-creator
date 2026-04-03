@@ -14,7 +14,10 @@ export default async function handler(req, res) {
     const allJobs = jobManager.getAllJobs();
     const allLogs = logManager.getAllLogs();
     
+    console.log("[API] Current jobs in memory:", Object.keys(allJobs));
+    
     const jobList = Object.entries(allJobs).map(([id, details]) => {
+      console.log(`[API] Processing job ${id}:`, details);
       const logs = allLogs[id] || {};
       const postedKeywords = logManager.getPostedKeywords(id);
       return {
@@ -27,6 +30,7 @@ export default async function handler(req, res) {
       };
     });
 
+    console.log("[API] Jobs to return:", jobList);
     return res.status(200).json({
       message: "Active scheduled posting jobs",
       activeJobs: jobList,
