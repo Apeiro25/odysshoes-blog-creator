@@ -558,10 +558,15 @@ export default function Home() {
                           <strong>Keywords:</strong> {job.keywords.join(', ')}
                         </p>
                         
-                        {/* Times */}
-                        <p style={{ margin: '0.6rem 0', fontSize: '13px' }}>
-                          <strong>Posting at:</strong> <span style={{ backgroundColor: '#e3f2fd', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>{job.times.join(', ')}</span>
-                        </p>
+                        {/* Posting Times & Author */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', margin: '0.6rem 0', fontSize: '13px' }}>
+                          <div>
+                            <strong>Posting at:</strong> <span style={{ backgroundColor: '#e3f2fd', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>{job.times.join(', ')}</span>
+                          </div>
+                          <div>
+                            <strong>Author:</strong> <span style={{ backgroundColor: '#f3e5f5', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>Scheduled Bot</span>
+                          </div>
+                        </div>
 
                         {/* Progress Bar */}
                         <div style={{ margin: '1rem 0' }}>
