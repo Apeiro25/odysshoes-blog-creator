@@ -11,9 +11,9 @@ async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, j
   try {
     // Determine the API URL based on environment
     const apiUrl =
-      process.env.NODE_ENV === "production"
-        ? `${process.env.RAILWAY_PUBLIC_DOMAIN || "http://localhost:3000"}/api/generate`
-        : "http://localhost:3000/api/generate";
+  process.env.NODE_ENV === "production"
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN || "localhost:3000"}/api/generate`
+    : "http://localhost:3000/api/generate";
 
     console.log(`[${jobId}] API URL: ${apiUrl}`);
 
