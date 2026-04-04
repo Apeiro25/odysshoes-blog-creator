@@ -16,23 +16,23 @@ const CACHE_DURATION = 3600000; // 1 hour
 async function fetchShopifyCollections(shopifyShop, shopifyToken) {
   try {
     console.log("Fetching Shopify collections...");
-    
-    const response = await fetch(
-      `https://${shopifyShop}/admin/api/2024-01/collections.json`,
-      {
-        headers: {
-          "X-Shopify-Access-Token": shopifyToken,
-        },
-      }
-    );
 
-    if (!response.ok) {
-      console.error("Failed to fetch collections:", response.statusText);
-      return [];
-    }
+    const [customRes, smartRes] = await Promise.all([
+      fetch(`https://${shopifyShop}/admin/api/2025-01/custom_collections.json`, {
+        headers: { "X-Shopify-Access-Token": shopifyToken },
+      }),
+      fetch(`https://${shopifyShop}/admin/api/2025-01/smart_collections.json`, {
+        headers: { "X-Shopify-Access-Token": shopifyToken },
+      }),
+    ]);
 
-    const data = await response.json();
-    return data.collections || [];
+    const customData = customRes.ok ? await customRes.json() : { custom_collections: [] };
+    const smartData = smartRes.ok ? await smartRes.json() : { smart_collections: [] };
+
+    return [
+      ...( customData.custom_collections || []),
+      ...( smartData.smart_collections || []),
+    ];
   } catch (error) {
     console.error("Error fetching collections:", error);
     return [];
@@ -47,7 +47,7 @@ async function fetchShopifyProducts(shopifyShop, shopifyToken) {
     console.log("Fetching Shopify products...");
     
     const response = await fetch(
-      `https://${shopifyShop}/admin/api/2024-01/products.json?limit=250`,
+      `https://${shopifyShop}/admin/api/2025-01/products.json?limit=250`,
       {
         headers: {
           "X-Shopify-Access-Token": shopifyToken,
