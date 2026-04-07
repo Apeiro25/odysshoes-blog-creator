@@ -379,7 +379,7 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
 
     console.log("Publishing blog post to Shopify...");
 
-    // Build complete blog HTML
+    // Build complete blog HTML (without schemas - will add after optimization)
     let blogHtml = 
       `<p>${result.intro}</p>` +
       (generatedImageURL ? `<h2>Featured Visual</h2><img src="${generatedImageURL}" alt="AI Generated Visual for ${keywords}" style="max-width: 100%; height: auto; margin: 20px 0;" />` : "") +
@@ -419,21 +419,7 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
                 `<p>${faq.answer || ""}</p>` +
                 `</div>`
             )
-            .join("") +
-          `<script type="application/ld+json">` +
-          JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": result.faqs.map((faq) => ({
-              "@type": "Question",
-              "name": faq.question,
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": faq.answer,
-              },
-            })),
-          }) +
-          `</script>`
+            .join("")
         : "");
 
     // Apply SEO optimization with smart internal links (optional if Shopify not configured)
@@ -469,6 +455,53 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
     // Generate SEO metadata
     const seoMetadata = generateSEOMetadata(result.title, optimizedHtml, keywords);
     console.log("SEO metadata:", seoMetadata);
+
+    // Add structured data schemas before publishing
+    console.log("Adding structured data schemas (FAQ and BlogPosting)...");
+    
+    // FAQ Schema
+    const faqSchema = result.faqs && Array.isArray(result.faqs) && result.faqs.length > 0
+      ? `<script type="application/ld+json">` +
+        JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": result.faqs.map((faq) => ({
+            "@type": "Question",
+            "name": faq.question,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": faq.answer,
+            },
+          })),
+        }) +
+        `</script>`
+      : "";
+    
+    // BlogPosting Schema
+    const blogPostingSchema = 
+      `<script type="application/ld+json">` +
+      JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": result.title,
+        "description": result.metaDescription,
+        "author": {
+          "@type": "Person",
+          "name": author
+        },
+        "datePublished": new Date().toISOString().split('T')[0],
+        "dateModified": new Date().toISOString().split('T')[0],
+        ...(generatedImageURL && {
+          "image": {
+            "@type": "ImageObject",
+            "url": generatedImageURL
+          }
+        })
+      }) +
+      `</script>`;
+    
+    // Append schemas to optimized HTML
+    optimizedHtml = optimizedHtml + faqSchema + blogPostingSchema;
 
     // Publish to Shopify with optimized content (optional)
     let shopifyResult = null;
