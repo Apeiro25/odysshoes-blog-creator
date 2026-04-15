@@ -96,7 +96,13 @@ export default async function handler(req, res) {
     logManager.markJobCompleted(jobId);
 
     // Archive job in Supabase (keep data for download, don't delete)
-    await jobDatabase.archiveJob(jobId);
+    try {
+      await jobDatabase.archiveJob(jobId);
+      console.log(`[SUCCESS] Job ${jobId} archived in Supabase`);
+    } catch (archiveError) {
+      console.warn(`[WARNING] Could not archive job in Supabase (may not exist in DB):`, archiveError.message);
+      // Continue - job may not have been saved to DB yet
+    }
 
     // Remove from memory manager
     await jobManager.removeJob(jobId);
