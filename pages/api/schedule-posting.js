@@ -67,7 +67,7 @@ export default async function handler(req, res) {
 
   const {
     keywords,
-    times = ["08:00", "12:00", "18:00"], // Default: 8 AM, 12 PM, 6 PM
+    times = ["06:00", "09:00", "12:00", "15:00", "18:00"], // Default: 6 AM, 9 AM, 12 PM, 3 PM, 6 PM
     shopifyToken,
     shopifyShop,
     shopifyBlogId,

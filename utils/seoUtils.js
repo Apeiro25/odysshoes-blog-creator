@@ -3,90 +3,151 @@
  */
 
 /**
- * Generate keywords related to the main topic for internal linking
+ * Generate blog article links for internal linking
+ * Maps multiple keywords to relevant blog articles on odysshoes.com/blogs/news
  * @param {string} mainKeyword - The main blog keyword
- * @returns {Array} - Array of related keywords with URLs
+ * @returns {Array} - Array of blog articles that can be linked to
  */
 export function generateRelatedKeywords(mainKeyword) {
-  // Common related keyword patterns for customizable shoes blog
-  const keywordDatabase = {
-    "custom shoes": [
-      { keyword: "customize shoes", url: "/collections/custom-shoes" },
-      { keyword: "personalized footwear", url: "/collections/custom-shoes" },
-      { keyword: "custom shoe design", url: "/collections/custom-shoes" },
-      { keyword: "bespoke shoes", url: "/collections/custom-shoes" },
-    ],
-    "basketball shoes": [
-      { keyword: "customize basketball shoes", url: "/collections/custom-basketball-shoes" },
-      { keyword: "custom basketball sneakers", url: "/collections/custom-basketball-shoes" },
-      { keyword: "personalized basketball shoes", url: "/collections/custom-basketball-shoes" },
-      { keyword: "custom hoops shoes", url: "/collections/custom-basketball-shoes" },
-    ],
-    "shoe customization": [
-      { keyword: "shoe design", url: "/collections/custom-shoes" },
-      { keyword: "shoe personalization", url: "/collections/custom-shoes" },
-      { keyword: "custom footwear options", url: "/collections/custom-shoes" },
-    ],
-    "sneaker design": [
-      { keyword: "design your own sneakers", url: "/collections/custom-shoes" },
-      { keyword: "custom sneaker design", url: "/collections/custom-shoes" },
-      { keyword: "sneaker customization", url: "/collections/custom-shoes" },
-    ],
-  };
+  // Blog article database - Multiple links to relevant published blogs
+  const blogArticleDatabase = [
+    // Custom Shoes & Customization
+    {
+      keywords: ["custom shoes", "customize shoes", "shoe customization", "bespoke shoes", "personalized shoes"],
+      anchor: "custom shoes",
+      url: "/blogs/news/custom-shoe-fitting-guide",
+    },
+    {
+      keywords: ["custom basketball shoes", "customize basketball shoes", "custom hoops shoes", "personalized basketball shoes"],
+      anchor: "custom basketball shoes",
+      url: "/blogs/news/custom-basketball-shoes-guide",
+    },
+    // Running & Athletic
+    {
+      keywords: ["running shoes", "marathon shoes", "jogging shoes", "trail running"],
+      anchor: "running shoes guide",
+      url: "/blogs/news/running-shoe-guide",
+    },
+    // Basketball & Sports
+    {
+      keywords: ["basketball shoes", "athletic shoes", "sports shoes", "performance shoes"],
+      anchor: "basketball shoes",
+      url: "/blogs/news/basketball-shoe-buying-guide",
+    },
+    // Hiking & Outdoor
+    {
+      keywords: ["hiking shoes", "trail shoes", "outdoor shoes", "trekking shoes"],
+      anchor: "hiking shoes",
+      url: "/blogs/news/hiking-shoe-guide",
+    },
+    // Water & Aquatic
+    {
+      keywords: ["water shoes", "aquatic shoes", "swimming shoes", "beach shoes"],
+      anchor: "water shoes",
+      url: "/blogs/news/water-shoes-guide",
+    },
+    // Comfort & Pain Relief
+    {
+      keywords: ["comfortable shoes", "shoe comfort", "foot pain", "comfort footwear", "supportive shoes"],
+      anchor: "shoe comfort tips",
+      url: "/blogs/news/shoe-comfort-guide",
+    },
+    // Shoe Care & Maintenance
+    {
+      keywords: ["shoe care", "shoe cleaning", "shoe maintenance", "clean shoes", "care for shoes"],
+      anchor: "shoe care guide",
+      url: "/blogs/news/shoe-care-maintenance",
+    },
+    // Shoe Fitting & Sizing
+    {
+      keywords: ["shoe fitting", "shoe sizing", "perfect fit", "proper fit", "shoe size"],
+      anchor: "shoe fitting guide",
+      url: "/blogs/news/shoe-fitting-guide",
+    },
+    // General Shoe Buying
+    {
+      keywords: ["shoe buying", "buy shoes", "shoe selection", "shoe guide", "best shoes"],
+      anchor: "shoe buying guide",
+      url: "/blogs/news/shoe-buying-guide",
+    },
+  ];
 
-  // Find related keywords
-  let relatedKeywords = [];
-  
-  for (const [key, value] of Object.entries(keywordDatabase)) {
-    if (mainKeyword.toLowerCase().includes(key) || key.includes(mainKeyword.toLowerCase())) {
-      relatedKeywords = [...relatedKeywords, ...value];
-    }
-  }
-
-  // If no matches found, return generic customization keywords
-  if (relatedKeywords.length === 0) {
-    relatedKeywords = [
-      { keyword: "customize shoes", url: "/collections/custom-shoes" },
-      { keyword: "custom basketball shoes", url: "/collections/custom-basketball-shoes" },
-    ];
-  }
-
-  return relatedKeywords.slice(0, 5); // Return top 5
+  return blogArticleDatabase;
 }
 
 /**
- * Analyze content and insert internal links naturally
+ * Find all link opportunities in content based on keywords
+ * @param {string} content - The blog post content (HTML)
+ * @param {Array} articles - Blog articles database from generateRelatedKeywords
+ * @returns {Array} - Array of link opportunities found in the content
+ */
+function findLinkOpportunities(content, articles) {
+  const opportunities = [];
+  const contentLower = content.toLowerCase();
+  const alreadyLinked = new Set();
+
+  articles.forEach((article) => {
+    article.keywords.forEach((keyword) => {
+      // Find all occurrences of this keyword
+      const regex = new RegExp(`\\b${keyword}\\b`, "gi");
+      let match;
+      
+      while ((match = regex.exec(content)) !== null) {
+        const position = match.index;
+        
+        // Check if already linked near this position
+        const nearbyLink = content.substring(Math.max(0, position - 50), position + 50).match(/<a\s+href=/);
+        if (!nearbyLink) {
+          opportunities.push({
+            keyword,
+            position,
+            article,
+            match: match[0],
+          });
+        }
+      }
+    });
+  });
+
+  return opportunities;
+}
+
+/**
+ * Analyze content and insert internal links to all relevant published blogs
  * @param {string} content - The blog post content (HTML)
  * @param {string} mainKeyword - The main blog keyword
  * @returns {string} - Content with internal links inserted
  */
 export function insertInternalLinks(content, mainKeyword) {
   try {
-    const relatedKeywords = generateRelatedKeywords(mainKeyword);
+    const articles = generateRelatedKeywords(mainKeyword);
     let modifiedContent = content;
-    let linksInserted = 0;
-    const maxLinksPerKeyword = 2;
+    let totalLinksInserted = 0;
+    const linkedKeywords = new Set(); // Track which keywords we've already linked
 
-    // For each related keyword, find natural places to insert links
-    relatedKeywords.forEach((item) => {
-      const { keyword, url } = item;
-      
-      // Create regex to find the keyword with word boundaries
-      const regex = new RegExp(`\\b${keyword}\\b(?!.*?<\\/a>)`, "gi");
-      let matches = 0;
-
-      // Replace only first 2 occurrences to avoid over-linking
-      modifiedContent = modifiedContent.replace(regex, (match) => {
-        if (matches < maxLinksPerKeyword && linksInserted < 5) {
-          matches++;
-          linksInserted++;
-          return `<a href="${url}" title="${keyword}">${match}</a>`;
+    // For each article in the database, find and link matching keywords (only once)
+    articles.forEach((article) => {
+      article.keywords.forEach((keyword) => {
+        // Skip if we've already linked this keyword
+        if (linkedKeywords.has(keyword.toLowerCase())) {
+          return;
         }
-        return match;
+
+        // Create regex to find the keyword with word boundaries
+        const regex = new RegExp(`\\b${keyword}\\b(?![^<]*>)(?![^<]*</a>)`, "i");
+        
+        // Replace ONLY the first occurrence
+        if (regex.test(modifiedContent)) {
+          modifiedContent = modifiedContent.replace(regex, (match) => {
+            linkedKeywords.add(keyword.toLowerCase());
+            totalLinksInserted++;
+            return `<a href="${article.url}" title="${article.anchor}">${match}</a>`;
+          });
+        }
       });
     });
 
-    console.log(`Inserted ${linksInserted} internal links`);
+    console.log(`Inserted ${totalLinksInserted} internal blog links (1 per keyword)`);
     return modifiedContent;
   } catch (error) {
     console.error("Error inserting internal links:", error);

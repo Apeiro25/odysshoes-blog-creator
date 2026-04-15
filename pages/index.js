@@ -16,7 +16,7 @@ export default function Home() {
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyShop, setShopifyShop] = useState('');
   const [shopifyBlogId, setShopifyBlogId] = useState('');
-  const [scheduleTimes, setScheduleTimes] = useState('08:00,12:00,18:00');
+  const [scheduleTimes, setScheduleTimes] = useState('06:00,09:00,12:00,15:00,18:00');
   const [activeJobs, setActiveJobs] = useState([]);
   const [showActiveJobs, setShowActiveJobs] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -151,7 +151,7 @@ export default function Home() {
       setContent(null);
       alert(`✓ Scheduled! Job ID: ${data.jobId}\n\nBlogs will post at: ${timeList.join(', ')}`);
       setKeywords('');
-      setScheduleTimes('08:00,12:00,18:00');
+      setScheduleTimes('06:00,09:00,12:00,15:00,18:00');
       
       // Refresh active jobs list
       await fetchActiveJobs();
@@ -181,7 +181,8 @@ export default function Home() {
         throw new Error('Failed to stop scheduled job');
       }
 
-      alert('✓ Scheduled posting job stopped successfully!');
+      const data = await response.json();
+      alert(`✓ Scheduled posting job stopped successfully!\n\n${data.note}`);
       setSelectedJobId('');
       
       // Refresh active jobs list
@@ -462,7 +463,7 @@ export default function Home() {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>Posting Times (24-hour format)</label>
               <input
                 type="text"
-                placeholder="HH:MM format, comma-separated (e.g., 08:00,12:00,18:00)"
+                placeholder="HH:MM format, comma-separated (e.g., 06:00,09:00,12:00,15:00,18:00)"
                 value={scheduleTimes}
                 onChange={(e) => setScheduleTimes(e.target.value)}
                 style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}

@@ -36,7 +36,7 @@ CREATE TABLE published_blogs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   UNIQUE(job_id, keyword),
-  CONSTRAINT fk_job FOREIGN KEY (job_id) REFERENCES scheduled_jobs(id) ON DELETE CASCADE
+  CONSTRAINT fk_job FOREIGN KEY (job_id) REFERENCES scheduled_jobs(id) ON DELETE RESTRICT
 );
 
 -- Create index for faster queries
@@ -75,6 +75,36 @@ CREATE INDEX idx_published_blogs_generated_at ON published_blogs(generated_at DE
 **Step 5**: Create indexes for performance:
 - Go to **SQL Editor**
 - Execute the index creation SQL above
+
+---
+
+## ⚠️ IMPORTANT: Updating Existing Database (If Table Already Created)
+
+### Issue: Published Blogs Deleted When Stopping Job
+
+If you created the `published_blogs` table **before April 16, 2026**, your constraint uses `ON DELETE CASCADE`, which deletes all published blogs when you stop a posting job. 
+
+**To fix this:**
+
+1. Go to Supabase → **SQL Editor**
+2. Run this query to update the constraint:
+
+```sql
+-- Drop the old cascade constraint
+ALTER TABLE published_blogs 
+DROP CONSTRAINT fk_job;
+
+-- Add the new restrict constraint (preserves blogs)
+ALTER TABLE published_blogs
+ADD CONSTRAINT fk_job FOREIGN KEY (job_id) REFERENCES scheduled_jobs(id) ON DELETE RESTRICT;
+```
+
+3. Click **"Run"**
+
+**Result:** Now when you stop a posting job:
+- ✅ The job is removed from `scheduled_jobs`
+- ✅ All published blogs are **preserved** in `published_blogs`
+- ❌ Blogs won't be deleted accidentally
 
 ---
 

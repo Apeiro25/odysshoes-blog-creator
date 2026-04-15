@@ -422,23 +422,27 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
             .join("")
         : "");
 
-    // Apply SEO optimization with smart internal links (optional if Shopify not configured)
+    // Apply SEO optimization with smart internal links
     console.log("Applying SEO optimization...");
     let optimizedHtml = blogHtml;
     let smartLinkDatabase = [];
     let linkOpportunities = { opportunities: [], total: 0 };
     let linkAnalysis = { totalWords: 0, linkCount: 0, linkDensity: "0", recommendation: "N/A" };
     
+    // Insert all relevant blog article links based on keywords
+    console.log("Inserting relevant blog article links...");
+    optimizedHtml = insertInternalLinks(optimizedHtml, keyword);
+    
     if (hasShopifyConfig) {
       try {
         console.log("Building smart linking database from Shopify store...");
         smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
         
-        console.log("Optimizing for SEO and inserting smart internal links...");
-        optimizedHtml = smartInsertInternalLinks(blogHtml, smartLinkDatabase);
+        console.log("Adding product/collection links...");
+        optimizedHtml = smartInsertInternalLinks(optimizedHtml, smartLinkDatabase);
         
         // Analyze link opportunities that were found but not used
-        linkOpportunities = analyzeLinkOpportunities(blogHtml, smartLinkDatabase);
+        linkOpportunities = analyzeLinkOpportunities(optimizedHtml, smartLinkDatabase);
         console.log("Link opportunities:", linkOpportunities);
         
         // Analyze link density for reporting

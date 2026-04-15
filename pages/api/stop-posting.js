@@ -62,10 +62,12 @@ export default async function handler(req, res) {
     console.log(`Stopped scheduled posting job: ${jobId}`);
 
     return res.status(200).json({
-      message: "Scheduled posting job stopped successfully",
+      message: "Scheduled posting job stopped successfully. Published blogs are archived and preserved in Supabase.",
       jobId,
       keywords: job.keywords,
       times: job.times,
+      blogsPreserved: true,
+      note: "All blogs that were posted are saved in the published_blogs table and will not be deleted."
     });
   } catch (error) {
     console.error("Error stopping scheduled posting job:", error);

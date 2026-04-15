@@ -152,52 +152,52 @@ export async function buildSmartLinkingDatabase(shopifyShop, shopifyToken) {
 
 /**
  * Smart insert internal links based on Shopify store structure
+ * Only adds product/collection links that don't conflict with existing links
  */
 export function smartInsertInternalLinks(content, shopifyLinkDatabase) {
   if (!shopifyLinkDatabase || shopifyLinkDatabase.length === 0) {
-    console.warn("No link database provided");
+    console.log("No Shopify link database available");
     return content;
   }
 
   try {
     let modifiedContent = content;
     let linksInserted = 0;
-    const maxTotalLinks = 8;
-    const maxLinksPerKeyword = 2;
+    const linkedKeywords = new Set(); // Track which keywords have been linked
+    const maxTotalLinks = 5; // Limit total product links
 
     // Sort by keyword length (longest first) to match most specific terms first
     const sortedDatabase = [...shopifyLinkDatabase].sort(
       (a, b) => b.keyword.length - a.keyword.length
     );
 
-    // For each keyword, find natural places to insert links
+    // For each keyword, link ONLY the first occurrence
     sortedDatabase.forEach((item) => {
       if (linksInserted >= maxTotalLinks) return;
 
       const { keyword, url, type, title } = item;
+      const keywordLower = keyword.toLowerCase();
 
-      // Create regex to find keyword with word boundaries
-      // Avoid linking already-linked content
-      const regex = new RegExp(`\\b${keyword}\\b(?!.*?<\\/a>)`, "gi");
-      let matches = 0;
+      // Skip if we've already linked this keyword
+      if (linkedKeywords.has(keywordLower)) {
+        return;
+      }
 
-      modifiedContent = modifiedContent.replace(regex, (match) => {
-        // Skip if already linked
-        if (modifiedContent.includes(`<a href="${url}"`)) {
-          return match;
-        }
-
-        if (matches < maxLinksPerKeyword && linksInserted < maxTotalLinks) {
-          matches++;
+      // Create regex to find keyword with word boundaries, avoiding already-linked content
+      const regex = new RegExp(`\\b${keyword}\\b(?![^<]*>)(?![^<]*</a>)`, "i");
+      
+      // Check if keyword exists and replace ONLY first occurrence
+      if (regex.test(modifiedContent)) {
+        modifiedContent = modifiedContent.replace(regex, (match) => {
+          linkedKeywords.add(keywordLower);
           linksInserted++;
-          const linkTitle = type === "product" ? `Check out ${title}` : `Shop ${title}`;
+          const linkTitle = type === "product" ? `View ${title}` : `Shop ${title}`;
           return `<a href="${url}" title="${linkTitle}">${match}</a>`;
-        }
-        return match;
-      });
+        });
+      }
     });
 
-    console.log(`Smart inserted ${linksInserted} internal links`);
+    console.log(`Smart inserted ${linksInserted} product/collection links (1 per keyword)`);
     return modifiedContent;
   } catch (error) {
     console.error("Error inserting smart links:", error);
