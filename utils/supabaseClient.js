@@ -134,6 +134,73 @@ export const jobDatabase = {
     }
   },
 
+  // Archive a job (mark as stopped, keep data for download)
+  async archiveJob(jobId, stoppedAt = new Date().toISOString()) {
+    try {
+      const { data, error } = await supabase
+        .from("scheduled_jobs")
+        .update({
+          status: "archived",
+          stopped_at: stoppedAt,
+        })
+        .eq("id", jobId)
+        .select();
+
+      if (error) {
+        console.error("Error archiving job:", error);
+        throw error;
+      }
+
+      console.log(`Job ${jobId} archived in Supabase (data preserved for download)`);
+      return data;
+    } catch (error) {
+      console.error("Failed to archive job:", error);
+      throw error;
+    }
+  },
+
+  // Permanently delete an archived job (after user downloads)
+  async deleteArchivedJob(jobId) {
+    try {
+      const { error } = await supabase
+        .from("scheduled_jobs")
+        .delete()
+        .eq("id", jobId);
+
+      if (error) {
+        console.error("Error deleting archived job:", error);
+        throw error;
+      }
+
+      console.log(`Archived job ${jobId} permanently deleted from Supabase`);
+      return true;
+    } catch (error) {
+      console.error("Failed to delete archived job:", error);
+      return false;
+    }
+  },
+
+  // Get all archived jobs
+  async getArchivedJobs() {
+    try {
+      const { data, error } = await supabase
+        .from("scheduled_jobs")
+        .select("*")
+        .eq("status", "archived")
+        .order("stopped_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching archived jobs:", error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Failed to fetch archived jobs:", error);
+      return [];
+    }
+  },
+
   // Clear all jobs
   async clearAllJobs() {
     try {

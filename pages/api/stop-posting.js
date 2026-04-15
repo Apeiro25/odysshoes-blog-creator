@@ -1,6 +1,7 @@
 import { jobManager } from "../../utils/jobManager.js";
 import { logManager } from "../../utils/logManager.js";
 import { jobDatabase } from "../../utils/supabaseClient.js";
+import { blogDatabase } from "../../utils/blogDatabase.js";
 
 export default async function handler(req, res) {
   // Allow both POST and GET requests for flexibility
@@ -94,8 +95,14 @@ export default async function handler(req, res) {
     // Mark as completed in logs
     logManager.markJobCompleted(jobId);
 
-    // Remove job from manager and Supabase
+    // Archive job in Supabase (keep data for download, don't delete)
+    await jobDatabase.archiveJob(jobId);
+
+    // Remove from memory manager
     await jobManager.removeJob(jobId);
+
+    // Get all published blogs for this job
+    const publishedBlogs = await blogDatabase.getJobBlogs(jobId);
 
     console.log(`Stopped scheduled posting job: ${jobId}`);
 
@@ -104,6 +111,25 @@ export default async function handler(req, res) {
       jobId,
       keywords: job.keywords,
       times: job.times,
+      stoppedAt: new Date().toISOString(),
+      summary: {
+        totalKeywordsPooled: job.keywords.length,
+        blogsPosted: publishedBlogs.length,
+      },
+      publishedBlogs: publishedBlogs.map((blog) => ({
+        keyword: blog.keyword,
+        title: blog.title,
+        slug: blog.slug,
+        imageUrl: blog.image_url,
+        metaDescription: blog.meta_description,
+        generatedAt: blog.generated_at,
+      })),
+      downloadOptions: {
+        jsonDownload: `/api/download-blogs?jobId=${jobId}&format=json`,
+        csvDownload: `/api/download-blogs?jobId=${jobId}&format=csv`,
+        viewAllBlogs: `/api/published-blogs?jobId=${jobId}`,
+      },
+      note: "Job data is archived and available for download before permanent deletion",
     });
   } catch (error) {
     console.error("Error stopping scheduled posting job:", error);
