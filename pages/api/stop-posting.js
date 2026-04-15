@@ -101,8 +101,14 @@ export default async function handler(req, res) {
     // Remove from memory manager
     await jobManager.removeJob(jobId);
 
-    // Get all published blogs for this job
-    const publishedBlogs = await blogDatabase.getJobBlogs(jobId);
+    // Get all published blogs for this job (handle if table doesn't exist)
+    let publishedBlogs = [];
+    try {
+      publishedBlogs = await blogDatabase.getJobBlogs(jobId);
+    } catch (blogError) {
+      console.warn(`[WARNING] Could not fetch published blogs (table may not exist):`, blogError.message);
+      // Continue without blog data - table might not be created yet
+    }
 
     console.log(`Stopped scheduled posting job: ${jobId}`);
 
