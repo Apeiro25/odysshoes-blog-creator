@@ -155,3 +155,131 @@ export const jobDatabase = {
     }
   },
 };
+
+/**
+ * Database operations for published blogs
+ */
+export const publishedBlogsDatabase = {
+  // Add a published blog to the database
+  async addPublishedBlog(jobId, keyword, metadata = {}) {
+    try {
+      const { data, error } = await supabase.from("published_blogs").insert([
+        {
+          job_id: jobId,
+          keyword: keyword,
+          title: metadata.title || "",
+          slug: metadata.slug || "",
+          image_url: metadata.imageUrl || null,
+          meta_description: metadata.metaDescription || "",
+          content_preview: metadata.contentPreview || "",
+          shopify_post_id: metadata.shopifyPostId || null,
+          posted_at: new Date().toISOString(),
+        },
+      ]);
+
+      if (error) {
+        console.error("Error adding published blog to database:", error);
+        // Don't throw - allow system to continue even if logging fails
+        return null;
+      }
+
+      console.log(`Published blog "${keyword}" added to Supabase`);
+      return data;
+    } catch (error) {
+      console.error("Failed to add published blog to database:", error);
+      // Return null instead of throwing to prevent job failures
+      return null;
+    }
+  },
+
+  // Get all used keywords from published blogs
+  async getUsedKeywords() {
+    try {
+      const { data, error } = await supabase
+        .from("published_blogs")
+        .select("keyword");
+
+      if (error) {
+        console.error("Error fetching used keywords:", error);
+        return [];
+      }
+
+      // Extract unique keywords
+      const keywords = data?.map(row => row.keyword) || [];
+      return [...new Set(keywords)];
+    } catch (error) {
+      console.error("Failed to fetch used keywords:", error);
+      return [];
+    }
+  },
+
+  // Get a published blog by keyword
+  async getBlogByKeyword(keyword) {
+    try {
+      const { data, error } = await supabase
+        .from("published_blogs")
+        .select("*")
+        .eq("keyword", keyword)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching blog:", error);
+        return null;
+      }
+
+      return data || null;
+    } catch (error) {
+      console.error("Failed to fetch blog:", error);
+      return null;
+    }
+  },
+
+  // Get all published blogs for a job
+  async getBlogsByJobId(jobId) {
+    try {
+      const { data, error } = await supabase
+        .from("published_blogs")
+        .select("*")
+        .eq("job_id", jobId);
+
+      if (error) {
+        console.error("Error fetching job blogs:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Failed to fetch job blogs:", error);
+      return [];
+    }
+  },
+
+  // Get all published blogs
+  async getAllPublishedBlogs() {
+    try {
+      const { data, error } = await supabase
+        .from("published_blogs")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching all published blogs:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Failed to fetch all published blogs:", error);
+      return [];
+    }
+  },
+
+  // Check if keyword is already published
+  async keywordExists(keyword) {
+    try {
+      const blog = await this.getBlogByKeyword(keyword);
+      return !!blog;
+    } catch (error) {
+      return false;
+    }
+  },
+};
