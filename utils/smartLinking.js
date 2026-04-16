@@ -152,9 +152,10 @@ export async function buildSmartLinkingDatabase(shopifyShop, shopifyToken) {
 
 /**
  * Smart insert internal links based on Shopify store structure
- * Only adds product/collection links that don't conflict with existing links
+ * With intelligent placement to prevent duplicate links of same keyword
+ * and avoid over-linking
  */
-export function smartInsertInternalLinks(content, shopifyLinkDatabase) {
+export function smartInsertInternalLinks(content, shopifyLinkDatabase, mainKeyword = "") {
   if (!shopifyLinkDatabase || shopifyLinkDatabase.length === 0) {
     console.log("No Shopify link database available");
     return content;
@@ -164,40 +165,96 @@ export function smartInsertInternalLinks(content, shopifyLinkDatabase) {
     let modifiedContent = content;
     let linksInserted = 0;
     const linkedKeywords = new Set(); // Track which keywords have been linked
+    const linkPositions = []; // Track where links are placed
     const maxTotalLinks = 5; // Limit total product links
+    const mainKeywordLower = mainKeyword.toLowerCase();
 
     // Sort by keyword length (longest first) to match most specific terms first
     const sortedDatabase = [...shopifyLinkDatabase].sort(
       (a, b) => b.keyword.length - a.keyword.length
     );
 
-    // For each keyword, link ONLY the first occurrence
-    sortedDatabase.forEach((item) => {
-      if (linksInserted >= maxTotalLinks) return;
+    // Split content into sections to manage link placement
+    const sections = modifiedContent.split("<h2>");
+    let processedSections = "";
 
-      const { keyword, url, type, title } = item;
-      const keywordLower = keyword.toLowerCase();
+    sections.forEach((section, sectionIndex) => {
+      let sectionContent = sectionIndex > 0 ? "<h2>" + section : section;
+      let sectionLinksAdded = 0;
+      const maxLinksPerSection = 2; // Max 2 links per section
 
-      // Skip if we've already linked this keyword
-      if (linkedKeywords.has(keywordLower)) {
-        return;
-      }
+      // For each keyword, link ONLY the first occurrence in the section
+      sortedDatabase.forEach((item) => {
+        if (linksInserted >= maxTotalLinks || sectionLinksAdded >= maxLinksPerSection) {
+          return;
+        }
 
-      // Create regex to find keyword with word boundaries, avoiding already-linked content
-      const regex = new RegExp(`\\b${keyword}\\b(?![^<]*>)(?![^<]*</a>)`, "i");
-      
-      // Check if keyword exists and replace ONLY first occurrence
-      if (regex.test(modifiedContent)) {
-        modifiedContent = modifiedContent.replace(regex, (match) => {
-          linkedKeywords.add(keywordLower);
-          linksInserted++;
-          const linkTitle = type === "product" ? `View ${title}` : `Shop ${title}`;
-          return `<a href="${url}" title="${linkTitle}">${match}</a>`;
-        });
-      }
+        const { keyword, url, type, title } = item;
+        const keywordLower = keyword.toLowerCase();
+
+        // Skip if we've already linked this keyword anywhere in the doc
+        if (linkedKeywords.has(keywordLower)) {
+          return;
+        }
+
+        // Skip if keyword is the main blog keyword (avoid redundant self-linking)
+        if (mainKeywordLower && keywordLower === mainKeywordLower) {
+          console.log(`Skipping self-link for main keyword: ${keyword}`);
+          return;
+        }
+
+        // Skip if keyword is already in URL or anchor text
+        if (sectionContent.includes(`value="${keyword}"`) || 
+            sectionContent.includes(`title="${keyword}"`)) {
+          return;
+        }
+
+        // Create regex to find keyword with word boundaries
+        // Negative lookaheads prevent linking already-linked content
+        const regex = new RegExp(
+          `\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b(?![^<]*>)(?![^<]*</a>)`,
+          "i"
+        );
+
+        // Check if keyword exists and replace ONLY first occurrence
+        if (regex.test(sectionContent)) {
+          const beforeContent = sectionContent.substring(0, sectionContent.search(regex));
+          const matchIndex = sectionContent.search(regex);
+
+          // Intelligent placement: avoid intro/outro (first 500 chars, last 300 chars)
+          const isInIntro = sectionIndex === 0 && matchIndex < 500;
+          const isInOutro = sectionIndex === sections.length - 1 && 
+                           matchIndex > sectionContent.length - 300;
+
+          // Skip if in intro or outro sections
+          if (isInIntro || isInOutro) {
+            console.log(`Skipping link placement in intro/outro: ${keyword}`);
+            return;
+          }
+
+          sectionContent = sectionContent.replace(regex, (match) => {
+            linkedKeywords.add(keywordLower);
+            linksInserted++;
+            sectionLinksAdded++;
+            linkPositions.push({
+              keyword,
+              section: sectionIndex,
+              position: matchIndex,
+            });
+
+            const linkTitle = type === "product" ? `View ${title}` : `Shop ${title}`;
+            return `<a href="${url}" title="${linkTitle}">${match}</a>`;
+          });
+        }
+      });
+
+      processedSections += sectionContent;
     });
 
-    console.log(`Smart inserted ${linksInserted} product/collection links (1 per keyword)`);
+    modifiedContent = processedSections;
+
+    console.log(`Smart inserted ${linksInserted} product/collection links (1 per keyword, intelligent placement)`);
+    console.log(`Link distribution: ${linkPositions.map(p => `"${p.keyword}" (section ${p.section})`).join(", ")}`);
     return modifiedContent;
   } catch (error) {
     console.error("Error inserting smart links:", error);

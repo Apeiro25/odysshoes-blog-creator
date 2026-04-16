@@ -22,6 +22,19 @@ export default function Home() {
   const [selectedJobId, setSelectedJobId] = useState('');
   const [jobLogs, setJobLogs] = useState(null);
   const [showJobLogs, setShowJobLogs] = useState(false);
+  const [integrationStatus, setIntegrationStatus] = useState({
+    odysshoesConnected: false,
+    publishedBlogsCount: 0,
+    duplicateCheckActive: false,
+    linkingActive: false,
+  });
+  const [schedulingStatus, setSchedulingStatus] = useState({
+    isChecking: false,
+    checkingMessage: '',
+    blogsLinked: 0,
+    keywordsGenerated: 0,
+    duplicatesSkipped: 0,
+  });
 
   useEffect(() => {
     // Load saved blogs from local storage
@@ -120,22 +133,32 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    if (!keywords || !keywords.trim()) {
-      setError('Keywords are required for scheduling.');
-      setLoading(false);
-      return;
-    }
+    setSchedulingStatus({
+      isChecking: true,
+      checkingMessage: '🔍 Connecting to odysshoes.com/blogs/news...',
+      blogsLinked: 0,
+      keywordsGenerated: 0,
+      duplicatesSkipped: 0,
+    });
 
     try {
-      const keywordList = keywords.split(',').map((kw) => kw.trim()).filter(kw => kw);
       const timeList = scheduleTimes.split(',').map((t) => t.trim()).filter(t => t);
 
+      // Update status
+      setSchedulingStatus(prev => ({
+        ...prev,
+        checkingMessage: '📊 Checking published blogs for duplicates...'
+      }));
+
+      // Wait a moment to show status update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Keywords will be auto-generated on the server, so we don't need to validate them here
       const response = await fetch('/api/schedule-posting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          keywords: keywordList,
+          keywords: [], // Empty array - server will auto-generate
           times: timeList,
           shopifyToken,
           shopifyShop,
@@ -149,14 +172,34 @@ export default function Home() {
 
       const data = await response.json();
       setContent(null);
-      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\nBlogs will post at: ${timeList.join(', ')}`);
-      setKeywords('');
+      
+      // Update status with results
+      const keywordCount = data.keywords?.length || 0;
+      const duplicateCount = data.duplicatesSkipped || 0;
+      const linkedCount = data.blogsLinked || 0;
+      
+      setSchedulingStatus({
+        isChecking: false,
+        checkingMessage: '✓ Setup complete!',
+        blogsLinked: linkedCount,
+        keywordsGenerated: keywordCount,
+        duplicatesSkipped: duplicateCount,
+      });
+
+      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')}`);
       setScheduleTimes('06:00,09:00,12:00,15:00,18:00');
       
       // Refresh active jobs list
       await fetchActiveJobs();
     } catch (err) {
       setError(err.message);
+      setSchedulingStatus({
+        isChecking: false,
+        checkingMessage: '❌ Setup failed',
+        blogsLinked: 0,
+        keywordsGenerated: 0,
+        duplicatesSkipped: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -438,6 +481,109 @@ export default function Home() {
             {mode === 'schedule' && '📅 Schedule Posting'}
           </h3>
 
+          {/* Integration Status - Only in schedule mode */}
+          {mode === 'schedule' && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              border: '2px solid #0070f3',
+              borderRadius: '8px',
+              backgroundColor: '#f0f7ff',
+            }}>
+              <p style={{ margin: '0 0 0.8rem 0', fontSize: '13px', fontWeight: 'bold', color: '#0070f3' }}>🔗 SYSTEM INTEGRATIONS</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '16px' }}>🌐</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold', color: '#333' }}>Odysshoes.com</p>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Connected to /blogs/news</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '16px' }}>✓</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold', color: '#333' }}>Duplicate Check</p>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Phrase + Broad Match</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '16px' }}>🔗</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold', color: '#333' }}>Auto-Linking</p>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Dynamic phrase matching</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '16px' }}>⚙️</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold', color: '#333' }}>Smart Linking</p>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Max 5 links per blog</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Scheduling Status - Shows during/after scheduling */}
+          {mode === 'schedule' && schedulingStatus.isChecking && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              border: '2px solid #ff9800',
+              borderRadius: '8px',
+              backgroundColor: '#fff8f0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '3px solid #ff9800',
+                  borderTop: '3px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}>
+                  <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 'bold', color: '#ff9800', fontSize: '13px' }}>
+                    {schedulingStatus.checkingMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Scheduling Results - Shows after scheduling completes */}
+          {mode === 'schedule' && !schedulingStatus.isChecking && schedulingStatus.keywordsGenerated > 0 && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              border: '2px solid #28a745',
+              borderRadius: '8px',
+              backgroundColor: '#f0fff4',
+            }}>
+              <p style={{ margin: '0 0 0.8rem 0', fontSize: '13px', fontWeight: 'bold', color: '#28a745' }}>✓ SETUP SUMMARY</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '12px' }}>
+                <div style={{ padding: '0.6rem 0.8rem', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #d4edda' }}>
+                  <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Keywords Generated</p>
+                  <p style={{ margin: '0.3rem 0 0 0', fontWeight: 'bold', fontSize: '14px', color: '#28a745' }}>{schedulingStatus.keywordsGenerated}</p>
+                </div>
+                {schedulingStatus.duplicatesSkipped > 0 && (
+                  <div style={{ padding: '0.6rem 0.8rem', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #ffeeba' }}>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Duplicates Skipped</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontWeight: 'bold', fontSize: '14px', color: '#ff9800' }}>{schedulingStatus.duplicatesSkipped}</p>
+                  </div>
+                )}
+                {schedulingStatus.blogsLinked > 0 && (
+                  <div style={{ padding: '0.6rem 0.8rem', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #b3e5fc' }}>
+                    <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Blogs to Link</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontWeight: 'bold', fontSize: '14px', color: '#0070f3' }}>{schedulingStatus.blogsLinked}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Competitor URLs - Only shown in scrape mode */}
           {mode === 'scrape' && (
             <textarea
@@ -448,14 +594,16 @@ export default function Home() {
             />
           )}
 
-          {/* Keywords Input */}
-          <input
-            type="text"
-            placeholder={mode === 'generate' ? "Keywords (comma-separated)" : mode === 'scrape' ? "Blog Keywords (optional - auto-detected if left blank)" : "Keywords for scheduling (comma-separated)"}
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            style={inputStyle}
-          />
+          {/* Keywords Input - Hidden in schedule mode */}
+          {mode !== 'schedule' && (
+            <input
+              type="text"
+              placeholder={mode === 'generate' ? "Keywords (comma-separated)" : mode === 'scrape' ? "Blog Keywords (optional - auto-detected if left blank)" : "Keywords for scheduling (comma-separated)"}
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              style={inputStyle}
+            />
+          )}
 
           {/* Schedule Times - Only shown in schedule mode */}
           {mode === 'schedule' && (
@@ -468,6 +616,9 @@ export default function Home() {
                 onChange={(e) => setScheduleTimes(e.target.value)}
                 style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}
               />
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                💡 Keywords will be automatically generated and checked against previously published blogs
+              </p>
             </>
           )}
 
@@ -486,7 +637,7 @@ export default function Home() {
             type="submit"
             style={{
               padding: '0.8rem 1.2rem',
-              backgroundColor: '#0070f3',
+              backgroundColor: mode === 'schedule' ? '#28a745' : '#0070f3',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
@@ -499,7 +650,13 @@ export default function Home() {
             }}
             disabled={loading}
           >
-            {loading ? '⏳ Processing...' : mode === 'generate' ? '🚀 Generate & Publish' : mode === 'scrape' ? '🚀 Scrape & Publish' : '🚀 Start Scheduler'}
+            {loading ? (
+              mode === 'schedule' ? '⏳ Starting Auto-Posting...' : '⏳ Processing...'
+            ) : (
+              mode === 'generate' ? '✨ Generate Blog' : 
+              mode === 'scrape' ? '🔗 Scrape & Generate' : 
+              '🚀 Start Auto-Posting'
+            )}
           </button>
         </form>
         {error && <p style={{ color: '#dc3545', marginTop: '1rem', padding: '1rem', backgroundColor: '#f8d7da', borderRadius: '6px', borderLeft: '4px solid #dc3545' }}>{error}</p>}
@@ -558,6 +715,13 @@ export default function Home() {
                         <p style={{ margin: '0.6rem 0', fontSize: '13px' }}>
                           <strong>Keywords:</strong> {job.keywords.join(', ')}
                         </p>
+                        
+                        {/* Linked Blogs */}
+                        {job.linkedBlogs && job.linkedBlogs.length > 0 && (
+                          <p style={{ margin: '0.6rem 0', fontSize: '13px' }}>
+                            <strong>🔗 Linked to:</strong> {job.linkedBlogs.join(', ')}
+                          </p>
+                        )}
                         
                         {/* Posting Times & Author */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', margin: '0.6rem 0', fontSize: '13px' }}>
@@ -716,6 +880,38 @@ export default function Home() {
                 {jobLogs.summary.failedPosts > 0 && (
                   <p style={{ margin: '0.4rem 0', fontSize: '14px' }}><strong>Failed Posts:</strong> <span style={{ color: '#dc3545', fontWeight: 'bold' }}>{jobLogs.summary.failedPosts}</span></p>
                 )}
+                
+                {/* Duplicate Information */}
+                {jobLogs.summary.duplicateInfo && (
+                  <>
+                    <p style={{ margin: '0.8rem 0 0.4rem 0', fontSize: '14px' }}><strong>🔍 Duplicate Analysis:</strong></p>
+                    <p style={{ margin: '0.3rem 0', fontSize: '13px', paddingLeft: '1rem' }}>
+                      <strong>Exact Matches (Phrase):</strong> {jobLogs.summary.duplicateInfo.exactMatches || 0}
+                    </p>
+                    <p style={{ margin: '0.3rem 0', fontSize: '13px', paddingLeft: '1rem' }}>
+                      <strong>Similar (Broad Match):</strong> {jobLogs.summary.duplicateInfo.similarMatches || 0}
+                    </p>
+                  </>
+                )}
+                
+                {/* Linking Information */}
+                {jobLogs.summary.linkingInfo && jobLogs.summary.linkingInfo.totalLinked > 0 && (
+                  <>
+                    <p style={{ margin: '0.8rem 0 0.4rem 0', fontSize: '14px' }}><strong>🔗 Internal Linking:</strong></p>
+                    <p style={{ margin: '0.3rem 0', fontSize: '13px', paddingLeft: '1rem' }}>
+                      <strong>Blogs Linked:</strong> {jobLogs.summary.linkingInfo.totalLinked}
+                    </p>
+                    <p style={{ margin: '0.3rem 0', fontSize: '13px', paddingLeft: '1rem' }}>
+                      <strong>Link Density:</strong> {jobLogs.summary.linkingInfo.avgLinkDensity || 'N/A'}
+                    </p>
+                    {jobLogs.summary.linkingInfo.linkedBlogsList && jobLogs.summary.linkingInfo.linkedBlogsList.length > 0 && (
+                      <p style={{ margin: '0.3rem 0', fontSize: '12px', paddingLeft: '1rem', color: '#0070f3' }}>
+                        Linked to: {jobLogs.summary.linkingInfo.linkedBlogsList.join(', ')}
+                      </p>
+                    )}
+                  </>
+                )}
+                
                 <p style={{ margin: '0.8rem 0 0.4rem 0', fontSize: '13px', fontWeight: 'bold' }}>Completion: {jobLogs.summary.percentageComplete}%</p>
                 <div style={{
                   width: '100%',
@@ -761,6 +957,18 @@ export default function Home() {
                             <p style={{ margin: '0.2rem 0', fontSize: '11px', color: '#999' }}>
                               {new Date(blog.timestamp).toLocaleString()}
                             </p>
+                            {/* Link Information */}
+                            {blog.linkedBlogs && blog.linkedBlogs.length > 0 && (
+                              <p style={{ margin: '0.3rem 0 0 0', fontSize: '11px', color: '#0070f3', fontWeight: 'bold' }}>
+                                🔗 Linked: {blog.linkedBlogs.join(', ')}
+                              </p>
+                            )}
+                            {/* Duplicate Info */}
+                            {blog.duplicateInfo && (
+                              <p style={{ margin: '0.3rem 0 0 0', fontSize: '11px', color: '#ff9800' }}>
+                                {blog.duplicateInfo.exactMatch ? '⚠️ Exact Match' : blog.duplicateInfo.similarMatch ? '⚠️ Similar Match' : '✓ Unique'}
+                              </p>
+                            )}
                           </div>
                           <span style={{
                             padding: '3px 8px',

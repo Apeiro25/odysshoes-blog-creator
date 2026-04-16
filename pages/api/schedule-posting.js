@@ -2,6 +2,10 @@ import cron from "node-cron";
 import { jobManager } from "../../utils/jobManager.js";
 import { logManager } from "../../utils/logManager.js";
 import { restoreActiveJobs } from "../../utils/jobRestoration.js";
+import { publishedBlogsDatabase } from "../../utils/supabaseClient.js";
+import { generateKeywords } from "../../utils/keywordGenerator.js";
+import { checkForDuplicates } from "../../utils/duplicateChecker.js";
+import { fetchPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
 
 // Flag to track if restoration has been attempted
 let hasAttemptedRestoration = false;
@@ -9,6 +13,46 @@ let hasAttemptedRestoration = false;
 // Function to generate and post blog
 async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, jobId) {
   try {
+    // Check for duplicates before generating
+    console.log(`Checking for duplicates for keyword: "${keyword}"...`);
+    const duplicateCheck = await checkForDuplicates(keyword);
+    
+    console.log(`Duplicate Check Result:`, duplicateCheck);
+    
+    if (duplicateCheck.isDuplicate) {
+      console.warn(`⛔ SKIPPING - ${duplicateCheck.recommendation}`);
+      duplicateCheck.warnings.forEach(w => console.warn(w));
+      logManager.addBlogLog(jobId, keyword, "skipped", {
+        reason: "Duplicate keyword detected",
+        duplicateReport: duplicateCheck,
+      });
+      return false;
+    }
+    
+    // Also check odysshoes.com for duplicates
+    console.log(`Checking odysshoes.com for duplicate keyword: "${keyword}"...`);
+    const publishedOdysshoeBlogs = await fetchPublishedBlogs();
+    const keywordExists = publishedOdysshoeBlogs.some(blog => 
+      blog.title.toLowerCase().includes(keyword.toLowerCase()) ||
+      blog.slug.toLowerCase().includes(keyword.toLowerCase().replace(/\s+/g, '-'))
+    );
+    
+    if (keywordExists) {
+      console.warn(`⛔ SKIPPING - Keyword already published on odysshoes.com`);
+      logManager.addBlogLog(jobId, keyword, "skipped", {
+        reason: "Keyword already exists on odysshoes.com/blogs/news",
+        odysshoesCheck: true,
+      });
+      return false;
+    }
+    
+    if (duplicateCheck.recommendation === "CAUTION - Very similar content exists" || 
+        duplicateCheck.recommendation === "CAUTION - Very similar blog already published") {
+      console.warn(`⚠️ WARNING - ${duplicateCheck.recommendation}`);
+      duplicateCheck.warnings.forEach(w => console.warn(w));
+      // Still proceed but log the warning
+    }
+    
     const response = await fetch("http://localhost:3000/api/generate", {
       method: "POST",
       headers: {
@@ -33,10 +77,29 @@ async function generateAndPostBlog(keyword, shopifyShop, shopifyToken, blogId, j
     const data = await response.json();
     console.log(`Successfully generated and posted blog for keyword: ${keyword}`);
     
-    // Log successful posting
+    // Log successful posting to published_blogs table
+    try {
+      await publishedBlogsDatabase.addPublishedBlog(jobId, keyword, {
+        title: data.blog?.title || "N/A",
+        slug: data.blog?.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "untitled",
+        imageUrl: data.shopifyResponse?.article?.image?.src || null,
+        metaDescription: data.blog?.metaDescription || "N/A",
+        contentPreview: data.blog?.intro || data.blog?.mainContent?.[0]?.content?.[0]?.text || "N/A",
+        shopifyPostId: data.shopifyResponse?.article?.id || null,
+      });
+      console.log(`✓ Logged to published_blogs: ${keyword}`);
+    } catch (dbError) {
+      console.warn(`Could not log to database: ${dbError.message}`);
+      // Don't fail the overall operation if logging fails
+    }
+    
+    // Log successful posting with odysshoes linking info
     logManager.addBlogLog(jobId, keyword, "success", {
       title: data.blog?.title || "N/A",
-      imageUrl: data.imageUrl || "N/A",
+      imageUrl: data.shopifyResponse?.article?.image?.src || "N/A",
+      shopifyPostId: data.shopifyResponse?.article?.id,
+      linkedOdysshoeBlogs: data.odysshoesIntegration?.linkedBlogs || [],
+      linkedBlogsCount: data.odysshoesIntegration?.linkedBlogsCount || 0,
     });
 
     return true;
@@ -66,18 +129,42 @@ export default async function handler(req, res) {
   }
 
   const {
-    keywords,
+    keywords: providedKeywords,
     times = ["06:00", "09:00", "12:00", "15:00", "18:00"], // Default: 6 AM, 9 AM, 12 PM, 3 PM, 6 PM
     shopifyToken,
     shopifyShop,
     shopifyBlogId,
   } = req.body;
 
-  // Validate required parameters
+  let keywords = providedKeywords;
+
+  // Auto-generate keywords if not provided
   if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
-    return res
-      .status(400)
-      .json({ error: "Keywords must be a non-empty array (e.g., ['keyword1', 'keyword2'])" });
+    try {
+      console.log("Keywords not provided. Auto-generating keywords...");
+      
+      // Get already published keywords to avoid duplicates
+      const usedKeywords = await publishedBlogsDatabase.getUsedKeywords();
+      console.log(`Avoiding ${usedKeywords.length} already-published keywords`);
+      
+      // Generate new keywords
+      const generatedKeywords = await generateKeywords(
+        ["custom shoes", "personalized shoes", "handmade shoes"],
+        usedKeywords,
+        "shoes and customization",
+        20 // Generate 20 keywords to start with
+      );
+      
+      if (!generatedKeywords || generatedKeywords.length === 0) {
+        return res.status(500).json({ error: "Failed to auto-generate keywords" });
+      }
+      
+      keywords = generatedKeywords;
+      console.log(`✓ Auto-generated ${keywords.length} keywords`);
+    } catch (error) {
+      console.error("Error auto-generating keywords:", error);
+      return res.status(500).json({ error: "Failed to auto-generate keywords", details: error.message });
+    }
   }
 
   if (!times || !Array.isArray(times) || times.length === 0) {
@@ -96,6 +183,10 @@ export default async function handler(req, res) {
   const jobId = `schedule-${Date.now()}`;
 
   try {
+    // Fetch published blogs from odysshoes.com for linking information
+    console.log('🌐 Fetching odysshoes.com/blogs/news for linking opportunities...');
+    const publishedOdysshoesBlogs = await fetchPublishedBlogs();
+    console.log(`✓ Found ${publishedOdysshoesBlogs.length} published blogs on odysshoes.com`);
     // Create cron jobs for each specified time
     const scheduledTasks = [];
 
@@ -178,6 +269,11 @@ export default async function handler(req, res) {
       jobId,
       keywords,
       times,
+      odysshoesIntegration: {
+        publishedBlogsCount: publishedOdysshoesBlogs.length,
+        linkedBlogsAvailable: Math.round(publishedOdysshoesBlogs.length * 0.6), // Estimate ~60% will have phrase matches
+        duplicatesSkipped: 0,
+      },
       instructions: "Use the job ID to stop this job. Send a POST request to /api/stop-posting with the jobId.",
     });
   } catch (error) {

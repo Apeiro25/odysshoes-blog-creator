@@ -1,6 +1,8 @@
 import { OpenAI } from "openai";
 import { insertInternalLinks, generateSEOMetadata, generateLinkingStrategy, analyzeLinkDensity } from "../../utils/seoUtils.js";
 import { buildSmartLinkingDatabase, smartInsertInternalLinks, analyzeLinkOpportunities } from "../../utils/smartLinking.js";
+import { checkForDuplicates } from "../../utils/duplicateChecker.js";
+import { fetchPublishedBlogs, findPhraseMatches, checkKeywordInPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Load API keys
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -69,6 +71,26 @@ function normalizeBlogContent(blog) {
       if (typeof item === "string") {
         return { type: "paragraph", text: item };
       }
+      
+      // Clean numbered list items by removing prefixes like "1.", "2.", etc.
+      if (item && item.type === "numbered" && item.text) {
+        // Remove leading numbers like "1. ", "2. ", "123. " etc.
+        item.text = item.text.replace(/^\d+\.\s*/, "").trim();
+      }
+      
+      // Validate table structure
+      if (item && item.type === "table") {
+        // Ensure headers and rows are arrays
+        if (!Array.isArray(item.headers)) {
+          item.headers = [];
+        }
+        if (!Array.isArray(item.rows)) {
+          item.rows = [];
+        }
+        // Ensure each row is an array
+        item.rows = item.rows.map(row => Array.isArray(row) ? row : []);
+      }
+      
       return item || { type: "paragraph", text: "" };
     });
 
@@ -308,6 +330,52 @@ export default async function handler(req, res) {
       .json({ error: "Author name is required and must be a string." });
   }
 
+  // Check for duplicate keywords and outdated years
+  console.log(`Checking for duplicates and year validation for: "${keywords}"`);
+  const duplicateReport = await checkForDuplicates(keywords);
+  console.log("Duplicate Report:", duplicateReport);
+
+  if (duplicateReport.isDuplicate) {
+    console.warn(`⛔ BLOCKING - ${duplicateReport.recommendation}`);
+    duplicateReport.warnings.forEach(w => console.warn(w));
+    return res.status(400).json({
+      error: "Keyword blocked",
+      reason: duplicateReport.recommendation,
+      warnings: duplicateReport.warnings,
+      duplicateReport,
+    });
+  }
+
+  if (duplicateReport.recommendation.includes("CAUTION")) {
+    console.warn(`⚠️ WARNING - ${duplicateReport.recommendation}`);
+    duplicateReport.warnings.forEach(w => console.warn(w));
+    // Log warning but continue (don't block)
+  }
+
+  // Fetch published blogs from odysshoes.com for linking opportunities
+  console.log('🌐 Checking odysshoes.com/blogs/news for published blogs...');
+  const publishedBlogs = await fetchPublishedBlogs();
+  
+  // Check if keyword already exists in published blogs
+  const keywordDuplicateCheck = checkKeywordInPublishedBlogs(keywords, publishedBlogs);
+  if (keywordDuplicateCheck.isDuplicate) {
+    console.warn(`⛔ ODYSSHOES DUPLICATE - Keyword already used in published blogs`);
+    console.warn(`Found ${keywordDuplicateCheck.matchCount} similar blog(s)`);
+    keywordDuplicateCheck.matches.forEach(m => {
+      console.warn(`  - ${m.blog.title} (${m.matchType})`);
+    });
+    return res.status(400).json({
+      error: "Keyword already published",
+      reason: `This keyword or similar content already exists on odysshoes.com/blogs/news`,
+      publishedBlogMatches: keywordDuplicateCheck.matches.map(m => ({
+        title: m.blog.title,
+        url: m.blog.url,
+        matchType: m.matchType,
+      })),
+      duplicateReport,
+    });
+  }
+
   const hasShopifyConfig = shopifyToken && shopifyShop && blogId;
   if (!hasShopifyConfig) {
     console.warn("Shopify credentials not fully configured. Blog will be generated without Shopify integration.");
@@ -325,57 +393,234 @@ export default async function handler(req, res) {
     
     console.log("Sending request to OpenAI...");
     const prompt = `
-Create a 2000 wods SEO-optimized blog based on the following keywords: "${keywords}".
-When given the keywords, you should research the top 5 search results on Google and create a comprehensive blog post that covers the topic in depth and average word count of the top 5 results.
-Your response should include:
-1. Title (avoid using "ultimate guide" or similar phrases)
-2. Meta Description
-3. Generate an intro paragraph for the blog (5 sentences long).
-4. Main Content (Strictly 2000 words): Structure the content into H2 sections. Each H2 can include:
-   - Paragraphs
-   - Bullet points
-   - Numbered lists (prefix with '1.', '2.', '3.' 4.' etc.)
-   - Tables (if necessary)
-5. FAQs (at least 5 questions with answers)
-6. Generate an outro that includes:
-   - A heading (H2) summarizing the conclusion.
-   - A concise paragraph providing a conclusion for the blog (5 sentences long).
-7. Optional: If relevant to the website odysshoes.com, which is a customizable shoe store, include a section on how the topic relates to customizable shoes.
-8. Do not include mentioning of brands names or their products.
-9. always put this link https://odysshoes.com/collections/custom-shoes to a word "customize shoes" "want to custom your shoes" or any similar to "custom shoes", strictly once only and in the last part of the blog.
-10.always put this link https://odysshoes.com/collections/custom-basketball-shoes to words like "customize basketball shoes", "customize your own basketball shoes" or any similar wordings strictly once only and in the last part of the blog.
+You are an expert SEO copywriter. Create a comprehensive, 2000-word SEO-optimized blog post based on the keyword: "${keywords}".
 
-Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
+INSTRUCTIONS:
+1. Research and create content that matches the depth and quality of top Google search results for this keyword
+2. Write in clear, professional language suitable for e-commerce customers
+3. Focus on providing value and answering user questions
+4. Make content engaging and scannable with proper formatting
+5. Use tables when comparing features, specs, or providing structured data
+
+BLOG STRUCTURE - Return ONLY valid JSON (no markdown, no explanations):
+
 {
-  "title": "Catchy blog title",
-  "metaDescription": "SEO-friendly meta description under 160 characters",
-  "h1": "H1 heading",
-  "intro": "2-3 sentence introduction",
+  "title": "SEO-friendly title (avoid 'ultimate guide' clichés)",
+  "metaDescription": "Compelling meta description under 160 characters for search results",
+  "h1": "Main heading for the blog post",
+  "intro": "2-3 paragraph introduction covering: what the topic is, why it matters, what the reader will learn",
+  
   "mainContent": [
     {
-      "heading": "Section Title",
+      "heading": "H2 section heading that matches one aspect of the keyword",
       "content": [
-        {"type": "paragraph", "text": "paragraph text"},
-        {"type": "bullet", "text": "bullet point"},
-        {"type": "numbered", "text": "numbered point"}
+        {"type": "paragraph", "text": "Detailed paragraph text explaining this section"},
+        {"type": "bullet", "text": "Key point or benefit"},
+        {"type": "bullet", "text": "Another key point"},
+        {"type": "numbered", "text": "First step or item in a list"},
+        {"type": "numbered", "text": "Second step or item"},
+        {"type": "table", "headers": ["Column 1", "Column 2", "Column 3"], "rows": [["Data 1", "Data 2", "Data 3"], ["Data 4", "Data 5", "Data 6"]]},
+        {"type": "paragraph", "text": "Concluding paragraph for this section"}
+      ]
+    },
+    {
+      "heading": "Another H2 section with different angle",
+      "content": [
+        {"type": "paragraph", "text": "Content for this section..."}
       ]
     }
   ],
+  
   "faqs": [
-    {"question": "FAQ question?", "answer": "FAQ answer"}
+    {"question": "Common question related to the keyword?", "answer": "Detailed answer..."},
+    {"question": "Another related question?", "answer": "Another detailed answer..."}
   ],
+  
   "outro": {
-    "heading": "Conclusion",
-    "paragraph": "Concluding paragraph"
+    "heading": "Conclusion or Final Thoughts",
+    "paragraph": "2-3 sentences summarizing key takeaways and encouraging reader action"
   }
-}`;
+}
+
+CONTENT GUIDELINES:
+- Main content MUST be 1300-2000+ words
+- Include at least 6-8 H2 sections covering different angles of the topic
+- Use a mix of paragraphs, bullet points, numbered lists, and tables for readability
+- Include at least 1-2 comparison tables when appropriate (compare features, specs, sizes, prices, etc.)
+- Include at least 5 FAQ questions with detailed answers
+- DO NOT add number prefixes to numbered list items (just provide text, e.g., {"type": "numbered", "text": "First step here"}, NOT "1. First step")
+- DO NOT promote commercial products
+- Focus on educational and informative content
+- If relevant to shoes or customization, relate the topic back to personalized/custom solutions
+- Make content valuable for both casual readers and customers interested in custom shoes
+
+TABLE FORMAT RULES:
+- Use tables for comparisons, specifications, or structured data
+- "headers": array of column titles
+- "rows": array of arrays, each inner array is a row of data
+- Keep tables simple and readable (3-6 columns, 3-8 rows max)
+- Include descriptive headers
+
+Return ONLY the JSON object - no additional text, markdown, or explanations.`;
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 4000,
     });
 
-    const result = normalizeBlogContent(extractJSON(response.choices[0].message.content));
+    let result = normalizeBlogContent(extractJSON(response.choices[0].message.content));
+
+    // Validation function to check if blog meets minimum requirements
+    const validateBlogContent = (blog) => {
+      // Count H2 sections
+      const h2Count = blog.mainContent ? blog.mainContent.length : 0;
+      
+      // Count words in main content
+      let totalWords = 0;
+      if (blog.mainContent && Array.isArray(blog.mainContent)) {
+        blog.mainContent.forEach((section) => {
+          if (section.content && Array.isArray(section.content)) {
+            section.content.forEach((item) => {
+              if (item && item.text) {
+                totalWords += item.text.split(/\s+/).length;
+              }
+            });
+          }
+        });
+      }
+      
+      // Add intro words
+      if (blog.intro) {
+        totalWords += blog.intro.split(/\s+/).length;
+      }
+      
+      // Add outro words
+      if (blog.outro && blog.outro.paragraph) {
+        totalWords += blog.outro.paragraph.split(/\s+/).length;
+      }
+      
+      // Add FAQ words
+      if (blog.faqs && Array.isArray(blog.faqs)) {
+        blog.faqs.forEach((faq) => {
+          if (faq.question) totalWords += faq.question.split(/\s+/).length;
+          if (faq.answer) totalWords += faq.answer.split(/\s+/).length;
+        });
+      }
+      
+      const meetsWordCount = totalWords >= 1300;
+      const meetsH2Count = h2Count >= 6;
+      
+      return {
+        valid: meetsWordCount && meetsH2Count,
+        totalWords,
+        h2Count,
+        meetsWordCount,
+        meetsH2Count
+      };
+    };
+
+    // Validate and regenerate if needed
+    let validation = validateBlogContent(result);
+    let regenerationAttempts = 0;
+    const maxRegenerationAttempts = 2;
+
+    while (!validation.valid && regenerationAttempts < maxRegenerationAttempts) {
+      regenerationAttempts++;
+      console.log(`Content validation failed. Regenerating (attempt ${regenerationAttempts}/${maxRegenerationAttempts})...`);
+      console.log(`Current: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
+      console.log(`Required: 1300+ words, 6+ H2 sections`);
+      
+      // Create stricter regeneration prompt
+      const regenerationPrompt = `
+You are an expert SEO copywriter. Create a COMPREHENSIVE, 1800-2200 word SEO-optimized blog post based on the keyword: "${keywords}".
+
+CRITICAL REQUIREMENTS - YOU MUST MEET THESE:
+1. EXACTLY 8-10 H2 SECTIONS (each section must be substantial with 150-300 words)
+2. TOTAL CONTENT MUST BE 1800-2200 WORDS (excluding FAQ and conclusion)
+3. EACH SECTION MUST HAVE:
+   - At least one paragraph (100-150 words)
+   - At least 2-3 bullets OR a numbered list OR a table
+   - Rich, detailed content
+
+INSTRUCTIONS:
+1. Research and create content that matches the depth and quality of top Google search results for this keyword
+2. Write in clear, professional language suitable for e-commerce customers
+3. Focus on providing value, detailed explanations, and answering user questions
+4. Make content engaging and scannable with proper formatting
+5. Use tables when comparing features, specs, or providing structured data
+6. Add more sections and deeper content coverage than the previous attempt
+
+BLOG STRUCTURE - Return ONLY valid JSON (no markdown, no explanations):
+
+{
+  "title": "SEO-friendly title (avoid 'ultimate guide' clichés)",
+  "metaDescription": "Compelling meta description under 160 characters for search results",
+  "h1": "Main heading for the blog post",
+  "intro": "3-4 paragraph introduction covering: what the topic is, why it matters, what the reader will learn",
+  
+  "mainContent": [
+    {
+      "heading": "H2 section 1 heading",
+      "content": [
+        {"type": "paragraph", "text": "Detailed 150+ word paragraph text"},
+        {"type": "bullet", "text": "Key point 1"},
+        {"type": "bullet", "text": "Key point 2"},
+        {"type": "bullet", "text": "Key point 3"}
+      ]
+    },
+    {
+      "heading": "H2 section 2 heading",
+      "content": [
+        {"type": "paragraph", "text": "Another detailed paragraph..."},
+        {"type": "numbered", "text": "Step 1"},
+        {"type": "numbered", "text": "Step 2"},
+        {"type": "numbered", "text": "Step 3"}
+      ]
+    }
+  ],
+  
+  "faqs": [
+    {"question": "Question 1?", "answer": "Detailed answer..."},
+    {"question": "Question 2?", "answer": "Another detailed answer..."}
+  ],
+  
+  "outro": {
+    "heading": "Conclusion",
+    "paragraph": "Concluding paragraph"
+  }
+}
+
+CONTENT GUIDELINES:
+- MUST have 8-10 H2 sections (this is non-negotiable)
+- MUST total 1800-2200 words in main content
+- Each section must be substantial (150-300 words minimum)
+- Use a mix of paragraphs, bullet points, numbered lists, and tables for readability
+- Include at least 1-2 comparison tables when appropriate
+- Include at least 5 FAQ questions with detailed answers
+- DO NOT add number prefixes to numbered list items
+- DO NOT promote commercial products
+- Focus on educational and informative content
+- If relevant to shoes or customization, relate to personalized/custom solutions
+
+Return ONLY the JSON object - no additional text, markdown, or explanations.`;
+
+      const regenerationResponse = await openai.chat.completions.create({
+        model: "gpt-4-turbo",
+        messages: [{ role: "user", content: regenerationPrompt }],
+        max_tokens: 4500,
+      });
+
+      result = normalizeBlogContent(extractJSON(regenerationResponse.choices[0].message.content));
+      validation = validateBlogContent(result);
+    }
+
+    if (!validation.valid) {
+      console.warn(`Blog content validation failed after ${regenerationAttempts} regeneration attempts`);
+      console.warn(`Final content: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
+      console.warn(`Required: 1300+ words, 6+ H2 sections`);
+    } else {
+      console.log(`✓ Blog content validation passed: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
+    }
 
     console.log("Publishing blog post to Shopify...");
 
@@ -385,22 +630,41 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
       (generatedImageURL ? `<h2>Featured Visual</h2><img src="${generatedImageURL}" alt="AI Generated Visual for ${keywords}" style="max-width: 100%; height: auto; margin: 20px 0;" />` : "") +
       result.mainContent
         .map((section) => {
+          // Helper function to render table
+          const renderTable = (table) => {
+            if (!table.headers || !table.rows) return "";
+            const headerHtml = table.headers.map(h => `<th style="border: 1px solid #ddd; padding: 8px; text-align: left;">${h || ""}</th>`).join("");
+            const rowsHtml = table.rows.map(row => {
+              const cellsHtml = (Array.isArray(row) ? row : []).map(cell => `<td style="border: 1px solid #ddd; padding: 8px;">${cell || ""}</td>`).join("");
+              return `<tr>${cellsHtml}</tr>`;
+            }).join("");
+            return `<table style="border-collapse: collapse; width: 100%; margin: 20px 0; border: 1px solid #ddd;"><thead style="background-color: #f5f5f5;"><tr>${headerHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+          };
+
+          // Collect numbered items
           let numberedItems = Array.isArray(section.content) ? section.content
             .filter((c) => c && c.type === "numbered")
             .map((c) => `<li>${c.text || ""}</li>`)
             .join("") : "";
 
+          // Render other content (paragraphs, bullets, tables)
+          const otherContent = Array.isArray(section.content) ? section.content
+            .map((c) => {
+              if (!c) return "";
+              if (c.type === "paragraph") {
+                return `<p>${c.text || ""}</p>`;
+              } else if (c.type === "bullet") {
+                return `<ul><li>${c.text || ""}</li></ul>`;
+              } else if (c.type === "table") {
+                return renderTable(c);
+              }
+              return "";
+            })
+            .join("") : "";
+
           return (
             `<h2>${section.heading || "Section"}</h2>` +
-            (Array.isArray(section.content) ? section.content
-              .map((c) =>
-                c && c.type === "paragraph"
-                  ? `<p>${c.text || ""}</p>`
-                  : c && c.type === "bullet"
-                  ? `<ul><li>${c.text || ""}</li></ul>`
-                  : ""
-              )
-              .join("") : "") +
+            otherContent +
             (numberedItems ? `<ol>${numberedItems}</ol>` : "")
           );
         })
@@ -428,6 +692,37 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
     let smartLinkDatabase = [];
     let linkOpportunities = { opportunities: [], total: 0 };
     let linkAnalysis = { totalWords: 0, linkCount: 0, linkDensity: "0", recommendation: "N/A" };
+    let linkedOdysshoeBlogs = [];
+    
+    // Check for phrase matches with published odysshoes.com blogs
+    console.log('🔗 Checking for phrase matches with published blogs...');
+    linkedOdysshoeBlogs = findPhraseMatches(result.title + ' ' + result.intro + ' ' + result.mainContent.map(s => s.heading + ' ' + s.content.map(c => c.text).join(' ')).join(' '), publishedBlogs);
+    
+    if (linkedOdysshoeBlogs.length > 0) {
+      console.log(`✓ Found ${linkedOdysshoeBlogs.length} phrase match(es) with existing blogs:`);
+      linkedOdysshoeBlogs.forEach((match, idx) => {
+        console.log(`  ${idx + 1}. "${match.title}" (${match.matchType})`);
+      });
+      
+      // Inject links to matched blogs into content
+      console.log('Injecting internal links to matched blogs...');
+      linkedOdysshoeBlogs.forEach((linkedBlog) => {
+        // Only add link if not already in content
+        if (!optimizedHtml.includes(linkedBlog.url)) {
+          // Find a good place to insert the link - after title mention or in first section
+          const titleMention = new RegExp(linkedBlog.title.split(' ')[0], 'gi');
+          optimizedHtml = optimizedHtml.replace(titleMention, (match) => {
+            // Only create link once per blog
+            if (!optimizedHtml.includes(`<a href="${linkedBlog.url}"`)) {
+              return `<a href="${linkedBlog.url}" title="${linkedBlog.title}">${match}</a>`;
+            }
+            return match;
+          });
+        }
+      });
+    } else {
+      console.log('ℹ️ No phrase matches found with existing odysshoes.com blogs');
+    }
     
     // Insert all relevant blog article links based on keywords
     console.log("Inserting relevant blog article links...");
@@ -438,8 +733,8 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
         console.log("Building smart linking database from Shopify store...");
         smartLinkDatabase = await buildSmartLinkingDatabase(shopifyShop, shopifyToken);
         
-        console.log("Adding product/collection links...");
-        optimizedHtml = smartInsertInternalLinks(optimizedHtml, smartLinkDatabase);
+        console.log("Adding product/collection links with intelligent placement...");
+        optimizedHtml = smartInsertInternalLinks(optimizedHtml, smartLinkDatabase, keyword);
         
         // Analyze link opportunities that were found but not used
         linkOpportunities = analyzeLinkOpportunities(optimizedHtml, smartLinkDatabase);
@@ -551,6 +846,18 @@ Return ONLY valid JSON (no markdown, no extra text) with this exact structure:
     res.status(200).json({
       success: true,
       blog: result,
+      contentValidation: validation,
+      duplicateCheck: duplicateReport,
+      odysshoesIntegration: {
+        publishedBlogsCount: publishedBlogs.length,
+        linkedBlogs: linkedOdysshoeBlogs.map(b => ({
+          title: b.title,
+          url: b.url,
+          slug: b.slug,
+          matchType: b.matchType,
+        })),
+        linkedBlogsCount: linkedOdysshoeBlogs.length,
+      },
       seo: {
         metadata: seoMetadata,
         linkAnalysis: linkAnalysis,
