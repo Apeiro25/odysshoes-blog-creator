@@ -186,7 +186,16 @@ export default function Home() {
         duplicatesSkipped: duplicateCount,
       });
 
-      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')}`);
+      // Build timezone info message
+      let timezoneMessage = '';
+      if (data.scheduledTimesInfo && data.scheduledTimesInfo.length > 0) {
+        timezoneMessage = '\n\n🌏 Posting Schedule (Timezone Conversion):\n';
+        data.scheduledTimesInfo.forEach((info, idx) => {
+          timezoneMessage += `  ${idx + 1}. ${info.phtTime} PHT → ${info.serverTime} ${info.serverTimezone}\n`;
+        });
+      }
+
+      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')} PHT${timezoneMessage}`);
       setScheduleTimes('06:00,09:00,12:00,15:00,18:00');
       
       // Refresh active jobs list
@@ -608,7 +617,7 @@ export default function Home() {
           {/* Schedule Times - Only shown in schedule mode */}
           {mode === 'schedule' && (
             <>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>Posting Times (24-hour format)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>Posting Times in Philippines Time (UTC+8)</label>
               <input
                 type="text"
                 placeholder="HH:MM format, comma-separated (e.g., 06:00,09:00,12:00,15:00,18:00)"
@@ -616,6 +625,9 @@ export default function Home() {
                 onChange={(e) => setScheduleTimes(e.target.value)}
                 style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}
               />
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                🌏 Times are in Philippines Time (UTC+8). Example: 09:00 = 9:00 AM PHT
+              </p>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
                 💡 Keywords will be automatically generated and checked against previously published blogs
               </p>
