@@ -1,17 +1,22 @@
 let cheerio;
 
-// Initialize cheerio dynamically to handle both CommonJS and ESM
-async function initCheerio() {
+// Initialize cheerio - use direct require with try-catch
+try {
+  cheerio = require('cheerio');
+} catch (err) {
+  console.warn('Warning: Could not load cheerio at module level:', err.message);
+  console.warn('Will attempt lazy loading on first use...');
+}
+
+// Lazy load cheerio if not loaded at module level
+function getCheerio() {
   if (!cheerio) {
     try {
-      cheerio = await import('cheerio');
-      // For CommonJS-style exports, check if it has a default property
-      if (cheerio.default) {
-        cheerio = cheerio.default;
-      }
-    } catch (err) {
-      // Fallback to require if dynamic import fails
       cheerio = require('cheerio');
+      console.log('✓ Successfully lazy-loaded cheerio');
+    } catch (err) {
+      console.error('Failed to load cheerio:', err.message);
+      throw new Error('Cheerio library failed to load. Make sure cheerio package is installed.');
     }
   }
   return cheerio;
@@ -30,9 +35,6 @@ let blogCache = {
  */
 async function fetchPublishedBlogs() {
   try {
-    // Initialize cheerio
-    await initCheerio();
-    
     // Check if cache is still valid
     if (blogCache.data && blogCache.timestamp && (Date.now() - blogCache.timestamp) < blogCache.ttl) {
       console.log('✓ Using cached blog data from odysshoes.com');
@@ -79,10 +81,8 @@ async function fetchPublishedBlogs() {
  */
 async function extractBlogMetadata(html) {
   try {
-    // Initialize cheerio
-    await initCheerio();
-    
-    const $ = cheerio.load(html);
+    // Get cheerio instance (with lazy loading if needed)
+    const $ = getCheerio().load(html);
     const blogs = [];
 
     // Shopify blog post selector - typically uses article or post class
