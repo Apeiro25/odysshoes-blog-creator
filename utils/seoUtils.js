@@ -11,64 +11,35 @@
 export function generateRelatedKeywords(mainKeyword) {
   // Blog article database - Multiple links to relevant published blogs
   const blogArticleDatabase = [
-    // Custom Shoes & Customization
+    // Custom Shoes
     {
       keywords: ["custom shoes", "customize shoes", "shoe customization", "bespoke shoes", "personalized shoes"],
       anchor: "custom shoes",
-      url: "/blogs/news/custom-shoe-fitting-guide",
+      url: "/collections/custom-shoes",
     },
+    // Custom Basketball Shoes
     {
       keywords: ["custom basketball shoes", "customize basketball shoes", "custom hoops shoes", "personalized basketball shoes"],
       anchor: "custom basketball shoes",
-      url: "/blogs/news/custom-basketball-shoes-guide",
+      url: "/collections/custom-basketball-shoes",
     },
-    // Running & Athletic
+    // Shoe Cleaning
     {
-      keywords: ["running shoes", "marathon shoes", "jogging shoes", "trail running"],
-      anchor: "running shoes guide",
-      url: "/blogs/news/running-shoe-guide",
+      keywords: ["shoe cleaner", "clean shoes", "shoe cleaning", "homemade shoe cleaner", "diy shoe cleaner"],
+      anchor: "homemade shoe cleaner guide",
+      url: "/blogs/news/clean-like-a-pro-homemade-shoe-cleaner-diy-guide",
     },
-    // Basketball & Sports
+    // Shoe Sizing & Fitting
     {
-      keywords: ["basketball shoes", "athletic shoes", "sports shoes", "performance shoes"],
-      anchor: "basketball shoes",
-      url: "/blogs/news/basketball-shoe-buying-guide",
+      keywords: ["shoe size", "measure shoe size", "shoe fitting", "shoe sizing", "proper fit"],
+      anchor: "measure your shoe size",
+      url: "/blogs/news/how-to-measure-your-shoe-size",
     },
-    // Hiking & Outdoor
+    // Non-Slip Shoes
     {
-      keywords: ["hiking shoes", "trail shoes", "outdoor shoes", "trekking shoes"],
-      anchor: "hiking shoes",
-      url: "/blogs/news/hiking-shoe-guide",
-    },
-    // Water & Aquatic
-    {
-      keywords: ["water shoes", "aquatic shoes", "swimming shoes", "beach shoes"],
-      anchor: "water shoes",
-      url: "/blogs/news/water-shoes-guide",
-    },
-    // Comfort & Pain Relief
-    {
-      keywords: ["comfortable shoes", "shoe comfort", "foot pain", "comfort footwear", "supportive shoes"],
-      anchor: "shoe comfort tips",
-      url: "/blogs/news/shoe-comfort-guide",
-    },
-    // Shoe Care & Maintenance
-    {
-      keywords: ["shoe care", "shoe cleaning", "shoe maintenance", "clean shoes", "care for shoes"],
-      anchor: "shoe care guide",
-      url: "/blogs/news/shoe-care-maintenance",
-    },
-    // Shoe Fitting & Sizing
-    {
-      keywords: ["shoe fitting", "shoe sizing", "perfect fit", "proper fit", "shoe size"],
-      anchor: "shoe fitting guide",
-      url: "/blogs/news/shoe-fitting-guide",
-    },
-    // General Shoe Buying
-    {
-      keywords: ["shoe buying", "buy shoes", "shoe selection", "shoe guide", "best shoes"],
-      anchor: "shoe buying guide",
-      url: "/blogs/news/shoe-buying-guide",
+      keywords: ["non-slip shoes", "non-slip", "slip resistant", "prevent slipping", "grip shoes"],
+      anchor: "make shoes non-slip",
+      url: "/blogs/news/how-to-make-shoes-non-slip-14-effective-methods",
     },
   ];
 
