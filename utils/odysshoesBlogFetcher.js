@@ -1,4 +1,21 @@
-const cheerio = require('cheerio');
+let cheerio;
+
+// Initialize cheerio dynamically to handle both CommonJS and ESM
+async function initCheerio() {
+  if (!cheerio) {
+    try {
+      cheerio = await import('cheerio');
+      // For CommonJS-style exports, check if it has a default property
+      if (cheerio.default) {
+        cheerio = cheerio.default;
+      }
+    } catch (err) {
+      // Fallback to require if dynamic import fails
+      cheerio = require('cheerio');
+    }
+  }
+  return cheerio;
+}
 
 // In-memory cache with TTL
 let blogCache = {
@@ -13,6 +30,9 @@ let blogCache = {
  */
 async function fetchPublishedBlogs() {
   try {
+    // Initialize cheerio
+    await initCheerio();
+    
     // Check if cache is still valid
     if (blogCache.data && blogCache.timestamp && (Date.now() - blogCache.timestamp) < blogCache.ttl) {
       console.log('✓ Using cached blog data from odysshoes.com');
@@ -33,7 +53,7 @@ async function fetchPublishedBlogs() {
     }
 
     const html = await response.text();
-    const blogs = extractBlogMetadata(html);
+    const blogs = await extractBlogMetadata(html);
 
     // Update cache
     blogCache.data = blogs;
@@ -55,10 +75,13 @@ async function fetchPublishedBlogs() {
 /**
  * Extract blog metadata from HTML
  * @param {string} html - HTML content from odysshoes.com/blogs/news
- * @returns {Array} Array of blog objects
+ * @returns {Promise<Array>} Array of blog objects
  */
-function extractBlogMetadata(html) {
+async function extractBlogMetadata(html) {
   try {
+    // Initialize cheerio
+    await initCheerio();
+    
     const $ = cheerio.load(html);
     const blogs = [];
 
