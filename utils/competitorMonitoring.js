@@ -181,7 +181,24 @@ export async function monitorCompetitorAndGenerateKeywords(
     // Extract keywords from titles
     let keywords = await extractKeywordsFromTitles(allTitles);
 
-    // Filter out already used keywords and excluded terms
+    // Helper function to check for old years
+    const hasOldYear = (keyword) => {
+      const yearPattern = /(\b(?:19|20)\d{2}\b)|(\b[0-9]{1,2}['\-]?\d{2}\b)/g;
+      const matches = keyword.match(yearPattern);
+      if (!matches) return false;
+      
+      return matches.some(year => {
+        let fullYear = year;
+        if (year.length === 2 || (year.includes("'") && year.length === 3)) {
+          const shortYear = parseInt(year.replace(/[''-]/g, ""));
+          fullYear = shortYear > 50 ? "19" + shortYear : "20" + shortYear;
+        }
+        const numYear = parseInt(fullYear);
+        return numYear <= 2025;
+      });
+    };
+
+    // Filter out already used keywords, excluded terms, and old years
     const excludedTerms = ["near me", "services"];
     keywords = keywords.filter(
       (kw) => {
@@ -191,6 +208,12 @@ export async function monitorCompetitorAndGenerateKeywords(
             used.toLowerCase().includes(kw.toLowerCase()) ||
             kw.toLowerCase().includes(used.toLowerCase())
         )) {
+          return false;
+        }
+        
+        // Check for old years
+        if (hasOldYear(kw)) {
+          console.log(`Skipping competitor keyword with old year: ${kw}`);
           return false;
         }
         

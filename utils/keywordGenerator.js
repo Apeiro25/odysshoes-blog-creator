@@ -30,6 +30,9 @@ These should be:
 - Related to the niche but NOT duplicates of existing ones
 - Specific and actionable (e.g., "how to...", "best...", "what is...")
 - Trending and relevant
+- NO keywords containing years (2025 or older)
+- NO keywords containing "near me"
+- NO keywords containing "services"
 
 Initial reference keywords: ${initialKeywords.join(", ")}
 ${usedKeywordsStr}
@@ -68,11 +71,36 @@ Return ONLY a JSON array of keywords with no additional text:
 
     // Validate and clean keywords
     const excludedTerms = ["near me", "services"];
+    const yearPattern = /(\b(?:19|20)\d{2}\b)|(\b[0-9]{1,2}['\-]?\d{2}\b)/g;
+    
+    const hasOldYear = (keyword) => {
+      const matches = keyword.match(yearPattern);
+      if (!matches) return false;
+      
+      return matches.some(year => {
+        let fullYear = year;
+        // Handle short year format (e.g., '25 or '24)
+        if (year.length === 2 || (year.includes("'") && year.length === 3)) {
+          const shortYear = parseInt(year.replace(/[''-]/g, ""));
+          fullYear = shortYear > 50 ? "19" + shortYear : "20" + shortYear;
+        }
+        
+        const numYear = parseInt(fullYear);
+        return numYear <= 2025;
+      });
+    };
+    
     keywords = keywords
       .filter((kw) => {
         // Filter out used keywords
         if (usedKeywords.some((used) => used.toLowerCase() === kw.toLowerCase())) {
           console.log(`Skipping duplicate keyword: ${kw}`);
+          return false;
+        }
+        
+        // Filter out keywords with old years (2025 or below)
+        if (hasOldYear(kw)) {
+          console.log(`Skipping keyword with old year: ${kw}`);
           return false;
         }
         
@@ -116,6 +144,9 @@ Requirements:
 - High search volume and intent
 - Actionable and specific
 - Popular blog topics format
+- NO keywords containing years (2025 or older)
+- NO keywords containing "near me"
+- NO keywords containing "services"
 
 Return ONLY a JSON array with no additional text:
 ["keyword 1", "keyword 2", ...]`;
@@ -153,6 +184,26 @@ Return ONLY a JSON array with no additional text:
         // Validate keyword format
         if (!kw || typeof kw !== "string" || kw.trim().length === 0) {
           return false;
+        }
+        
+        // Check for old years (2025 or below)
+        const yearPattern = /(\b(?:19|20)\d{2}\b)|(\b[0-9]{1,2}['\-]?\d{2}\b)/g;
+        const matches = kw.match(yearPattern);
+        if (matches) {
+          const hasOldYear = matches.some(year => {
+            let fullYear = year;
+            if (year.length === 2 || (year.includes("'") && year.length === 3)) {
+              const shortYear = parseInt(year.replace(/[''-]/g, ""));
+              fullYear = shortYear > 50 ? "19" + shortYear : "20" + shortYear;
+            }
+            const numYear = parseInt(fullYear);
+            return numYear <= 2025;
+          });
+          
+          if (hasOldYear) {
+            console.log(`Skipping keyword with old year: ${kw}`);
+            return false;
+          }
         }
         
         // Filter out keywords containing excluded terms
