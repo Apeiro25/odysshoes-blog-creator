@@ -11,7 +11,19 @@ export default async function handler(req, res) {
 
   // If no jobId provided, show available jobs
   if (!jobId) {
-    const allJobs = jobManager.getAllJobs();
+    // First, try to load jobs from Supabase if memory is empty
+    let allJobs = jobManager.getAllJobs();
+    if (Object.keys(allJobs).length === 0) {
+      console.log('No in-memory jobs found, loading from Supabase...');
+      try {
+        await jobManager.loadJobsFromDatabase();
+        allJobs = jobManager.getAllJobs();
+        console.log(`Loaded ${Object.keys(allJobs).length} jobs from Supabase`);
+      } catch (error) {
+        console.warn('Could not load jobs from Supabase:', error.message);
+      }
+    }
+    
     const allLogs = logManager.getAllLogs();
     
     const jobList = Object.entries(allJobs).map(([id, details]) => {
@@ -42,32 +54,59 @@ export default async function handler(req, res) {
     const job = jobManager.getJob(jobId);
 
     if (!job) {
-      return res.status(404).json({ 
-        error: `Job not found: ${jobId}`,
-      });
+      // Job not in memory, but might still be in Supabase - try to remove it anyway
+      console.log(`Job ${jobId} not found in memory, attempting to remove from Supabase...`);
+      try {
+        await jobManager.removeJob(jobId);
+        return res.status(200).json({
+          message: "Job stopped and removed from Supabase",
+          jobId,
+          note: "Job was not in memory but has been removed from Supabase to prevent future resumption.",
+        });
+      } catch (dbError) {
+        console.error(`Failed to remove job from Supabase: ${dbError.message}`);
+        return res.status(404).json({ 
+          error: `Job not found: ${jobId}. Could not remove from Supabase.`,
+        });
+      }
     }
 
     // Stop all cron tasks associated with this job
-    for (const { task } of job.scheduledTasks) {
-      task.stop();
-      task.destroy();
+    console.log(`[${jobId}] Stopping ${job.scheduledTasks?.length || 0} cron tasks...`);
+    if (job.scheduledTasks && Array.isArray(job.scheduledTasks)) {
+      for (const { task, time } of job.scheduledTasks) {
+        try {
+          if (task) {
+            task.stop();
+            task.destroy();
+            console.log(`[${jobId}] Stopped cron task for time: ${time}`);
+          }
+        } catch (taskError) {
+          console.error(`[${jobId}] Error stopping task for time ${time}:`, taskError.message);
+        }
+      }
     }
 
     // Mark as completed in logs
     logManager.markJobCompleted(jobId);
 
     // Remove job from manager and Supabase
-    await jobManager.removeJob(jobId);
+    const removed = await jobManager.removeJob(jobId);
+    
+    if (!removed) {
+      console.warn(`[${jobId}] Warning: Job could not be removed from database, but has been stopped in memory`);
+    }
 
-    console.log(`Stopped scheduled posting job: ${jobId}`);
+    console.log(`Successfully stopped scheduled posting job: ${jobId}`);
 
     return res.status(200).json({
-      message: "Scheduled posting job stopped successfully. Published blogs are archived and preserved in Supabase.",
+      message: "Scheduled posting job stopped successfully and removed from Supabase",
       jobId,
       keywords: job.keywords,
       times: job.times,
       blogsPreserved: true,
-      note: "All blogs that were posted are saved in the published_blogs table and will not be deleted."
+      stoppedAt: new Date().toISOString(),
+      note: "All blogs that were posted are saved in the published_blogs table and will not be deleted. Job has been removed from Supabase so it will not resume on server restart.",
     });
   } catch (error) {
     console.error("Error stopping scheduled posting job:", error);
