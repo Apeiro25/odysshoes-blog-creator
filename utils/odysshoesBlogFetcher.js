@@ -1,4 +1,4 @@
-import cheerio from 'cheerio';
+const cheerio = require('cheerio');
 
 // In-memory cache with TTL
 let blogCache = {
@@ -11,7 +11,7 @@ let blogCache = {
  * Fetch all published blogs from odysshoes.com/blogs/news
  * @returns {Promise<Array>} Array of blog objects with title, slug, url, and fullText
  */
-export async function fetchPublishedBlogs() {
+async function fetchPublishedBlogs() {
   try {
     // Check if cache is still valid
     if (blogCache.data && blogCache.timestamp && (Date.now() - blogCache.timestamp) < blogCache.ttl) {
@@ -57,7 +57,7 @@ export async function fetchPublishedBlogs() {
  * @param {string} html - HTML content from odysshoes.com/blogs/news
  * @returns {Array} Array of blog objects
  */
-export function extractBlogMetadata(html) {
+function extractBlogMetadata(html) {
   try {
     const $ = cheerio.load(html);
     const blogs = [];
@@ -131,7 +131,7 @@ export function extractBlogMetadata(html) {
  * @param {Array} publishedBlogs - Array of published blog objects
  * @returns {Array} Array of matching blogs
  */
-export function findPhraseMatches(content, publishedBlogs) {
+function findPhraseMatches(content, publishedBlogs) {
   const matches = [];
   
   if (!content || !publishedBlogs || publishedBlogs.length === 0) {
@@ -212,7 +212,7 @@ export function findPhraseMatches(content, publishedBlogs) {
  * @param {Array} publishedBlogs - Array of published blog objects
  * @returns {Object} Duplicate check result
  */
-export function checkKeywordInPublishedBlogs(keyword, publishedBlogs) {
+function checkKeywordInPublishedBlogs(keyword, publishedBlogs) {
   if (!keyword || !publishedBlogs || publishedBlogs.length === 0) {
     return {
       isDuplicate: false,
@@ -263,7 +263,7 @@ export function checkKeywordInPublishedBlogs(keyword, publishedBlogs) {
  * Get cache status
  * @returns {Object} Cache status information
  */
-export function getCacheStatus() {
+function getCacheStatus() {
   if (!blogCache.data) {
     return { status: 'empty', blogs: 0, age: null };
   }
@@ -283,7 +283,7 @@ export function getCacheStatus() {
 /**
  * Clear cache manually
  */
-export function clearCache() {
+function clearCache() {
   blogCache = {
     data: null,
     timestamp: null,
@@ -296,14 +296,14 @@ export function clearCache() {
  * Get blogs from cache (without fetching)
  * @returns {Array} Cached blog data or empty array
  */
-export function getCachedBlogs() {
+function getCachedBlogs() {
   if (!blogCache.data || (Date.now() - blogCache.timestamp) >= blogCache.ttl) {
     return [];
   }
   return blogCache.data;
 }
 
-export default {
+module.exports = {
   fetchPublishedBlogs,
   extractBlogMetadata,
   findPhraseMatches,

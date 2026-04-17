@@ -2,7 +2,7 @@ import { OpenAI } from "openai";
 import { insertInternalLinks, generateSEOMetadata, generateLinkingStrategy, analyzeLinkDensity } from "../../utils/seoUtils.js";
 import { buildSmartLinkingDatabase, smartInsertInternalLinks, analyzeLinkOpportunities } from "../../utils/smartLinking.js";
 import { checkForDuplicates } from "../../utils/duplicateChecker.js";
-import { fetchPublishedBlogs, findPhraseMatches, checkKeywordInPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
+const { fetchPublishedBlogs, findPhraseMatches, checkKeywordInPublishedBlogs } = require("../../utils/odysshoesBlogFetcher.js");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); // Load API keys
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -607,7 +607,7 @@ Return ONLY the JSON object - no additional text, markdown, or explanations.`;
       const regenerationResponse = await openai.chat.completions.create({
         model: "gpt-4-turbo",
         messages: [{ role: "user", content: regenerationPrompt }],
-        max_tokens: 4500,
+        max_tokens: 4000,
       });
 
       result = normalizeBlogContent(extractJSON(regenerationResponse.choices[0].message.content));

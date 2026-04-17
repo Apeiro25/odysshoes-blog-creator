@@ -5,7 +5,7 @@ import { restoreActiveJobs } from "../../utils/jobRestoration.js";
 import { publishedBlogsDatabase } from "../../utils/supabaseClient.js";
 import { generateKeywords } from "../../utils/keywordGenerator.js";
 import { checkForDuplicates } from "../../utils/duplicateChecker.js";
-import { fetchPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
+const { fetchPublishedBlogs } = require("../../utils/odysshoesBlogFetcher.js");
 
 // Flag to track if restoration has been attempted
 let hasAttemptedRestoration = false;
