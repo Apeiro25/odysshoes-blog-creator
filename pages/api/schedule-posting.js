@@ -5,7 +5,7 @@ import { restoreActiveJobs } from "../../utils/jobRestoration.js";
 import { publishedBlogsDatabase } from "../../utils/supabaseClient.js";
 import { generateKeywords } from "../../utils/keywordGenerator.js";
 import { checkForDuplicates } from "../../utils/duplicateChecker.js";
-const { fetchPublishedBlogs } = require("../../utils/odysshoesBlogFetcher.js");
+import { fetchPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
 
 // Philippines timezone offset (UTC+8)
 const PHT_OFFSET = 8;

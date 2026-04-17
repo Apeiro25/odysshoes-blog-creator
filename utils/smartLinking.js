@@ -3,8 +3,6 @@
  * Fetches Shopify store structure and generates intelligent internal links
  */
 
-import { cache } from 'react';
-
 // Cache Shopify data to avoid repeated API calls
 let cachedShopifyLinks = null;
 let cacheTimestamp = 0;

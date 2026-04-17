@@ -326,7 +326,7 @@ function getCachedBlogs() {
   return blogCache.data;
 }
 
-module.exports = {
+export {
   fetchPublishedBlogs,
   extractBlogMetadata,
   findPhraseMatches,
