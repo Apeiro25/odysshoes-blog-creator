@@ -67,6 +67,7 @@ Return ONLY a JSON array of keywords with no additional text:
     }
 
     // Validate and clean keywords
+    const excludedTerms = ["near me", "services"];
     keywords = keywords
       .filter((kw) => {
         // Filter out used keywords
@@ -74,6 +75,16 @@ Return ONLY a JSON array of keywords with no additional text:
           console.log(`Skipping duplicate keyword: ${kw}`);
           return false;
         }
+        
+        // Filter out keywords containing excluded terms
+        const kwLower = kw.toLowerCase();
+        for (const term of excludedTerms) {
+          if (kwLower.includes(term)) {
+            console.log(`Skipping keyword with excluded term "${term}": ${kw}`);
+            return false;
+          }
+        }
+        
         return kw && typeof kw === "string" && kw.trim().length > 0;
       })
       .map((kw) => kw.trim())
@@ -138,7 +149,24 @@ Return ONLY a JSON array with no additional text:
     }
 
     keywords = keywords
-      .filter((kw) => kw && typeof kw === "string" && kw.trim().length > 0)
+      .filter((kw) => {
+        // Validate keyword format
+        if (!kw || typeof kw !== "string" || kw.trim().length === 0) {
+          return false;
+        }
+        
+        // Filter out keywords containing excluded terms
+        const excludedTerms = ["near me", "services"];
+        const kwLower = kw.toLowerCase();
+        for (const term of excludedTerms) {
+          if (kwLower.includes(term)) {
+            console.log(`Skipping keyword with excluded term "${term}": ${kw}`);
+            return false;
+          }
+        }
+        
+        return true;
+      })
       .map((kw) => kw.trim())
       .slice(0, count);
 

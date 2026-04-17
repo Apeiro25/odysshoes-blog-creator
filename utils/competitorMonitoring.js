@@ -181,14 +181,30 @@ export async function monitorCompetitorAndGenerateKeywords(
     // Extract keywords from titles
     let keywords = await extractKeywordsFromTitles(allTitles);
 
-    // Filter out already used keywords
+    // Filter out already used keywords and excluded terms
+    const excludedTerms = ["near me", "services"];
     keywords = keywords.filter(
-      (kw) =>
-        !usedKeywords.some(
+      (kw) => {
+        // Check for used keywords
+        if (usedKeywords.some(
           (used) =>
             used.toLowerCase().includes(kw.toLowerCase()) ||
             kw.toLowerCase().includes(used.toLowerCase())
-        )
+        )) {
+          return false;
+        }
+        
+        // Check for excluded terms
+        const kwLower = kw.toLowerCase();
+        for (const term of excludedTerms) {
+          if (kwLower.includes(term)) {
+            console.log(`Skipping competitor keyword with excluded term "${term}": ${kw}`);
+            return false;
+          }
+        }
+        
+        return true;
+      }
     );
 
     console.log(`After filtering used keywords: ${keywords.length} keywords available`);
