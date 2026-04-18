@@ -443,8 +443,8 @@ BLOG STRUCTURE - Return ONLY valid JSON (no markdown, no explanations):
 }
 
 CONTENT GUIDELINES:
-- Main content MUST be 1300-2000+ words
-- Include at least 6-8 H2 sections covering different angles of the topic
+- Main content MUST be 800-1500+ words
+- Include at least 4-6 H2 sections covering different angles of the topic
 - Use a mix of paragraphs, bullet points, numbered lists, and tables for readability
 - Include at least 1-2 comparison tables when appropriate (compare features, specs, sizes, prices, etc.)
 - Include at least 5 FAQ questions with detailed answers
@@ -507,8 +507,8 @@ Return ONLY the JSON object - no additional text, markdown, or explanations.`;
         });
       }
       
-      const meetsWordCount = totalWords >= 1300;
-      const meetsH2Count = h2Count >= 6;
+      const meetsWordCount = totalWords >= 800;
+      const meetsH2Count = h2Count >= 4;
       
       return {
         valid: meetsWordCount && meetsH2Count,
@@ -528,15 +528,15 @@ Return ONLY the JSON object - no additional text, markdown, or explanations.`;
       regenerationAttempts++;
       console.log(`Content validation failed. Regenerating (attempt ${regenerationAttempts}/${maxRegenerationAttempts})...`);
       console.log(`Current: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
-      console.log(`Required: 1300+ words, 6+ H2 sections`);
+      console.log(`Required: 800+ words, 4+ H2 sections`);
       
       // Create stricter regeneration prompt
       const regenerationPrompt = `
-You are an expert SEO copywriter. Create a COMPREHENSIVE, 1800-2200 word SEO-optimized blog post based on the keyword: "${keywords}".
+You are an expert SEO copywriter. Create a COMPREHENSIVE, 1200-1500 word SEO-optimized blog post based on the keyword: "${keywords}".
 
 CRITICAL REQUIREMENTS - YOU MUST MEET THESE:
-1. EXACTLY 8-10 H2 SECTIONS (each section must be substantial with 150-300 words)
-2. TOTAL CONTENT MUST BE 1800-2200 WORDS (excluding FAQ and conclusion)
+1. EXACTLY 6-8 H2 SECTIONS (each section must be substantial with 100-200 words)
+2. TOTAL CONTENT MUST BE 1200-1500 WORDS (excluding FAQ and conclusion)
 3. EACH SECTION MUST HAVE:
    - At least one paragraph (100-150 words)
    - At least 2-3 bullets OR a numbered list OR a table
@@ -591,8 +591,8 @@ BLOG STRUCTURE - Return ONLY valid JSON (no markdown, no explanations):
 }
 
 CONTENT GUIDELINES:
-- MUST have 8-10 H2 sections (this is non-negotiable)
-- MUST total 1800-2200 words in main content
+- MUST have 6-8 H2 sections (this is non-negotiable)
+- MUST total 1200-1500 words in main content
 - Each section must be substantial (150-300 words minimum)
 - Use a mix of paragraphs, bullet points, numbered lists, and tables for readability
 - Include at least 1-2 comparison tables when appropriate
@@ -617,7 +617,7 @@ Return ONLY the JSON object - no additional text, markdown, or explanations.`;
     if (!validation.valid) {
       console.warn(`Blog content validation failed after ${regenerationAttempts} regeneration attempts`);
       console.warn(`Final content: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
-      console.warn(`Required: 1300+ words, 6+ H2 sections`);
+      console.warn(`Required: 800+ words, 4+ H2 sections`);
     } else {
       console.log(`✓ Blog content validation passed: ${validation.totalWords} words, ${validation.h2Count} H2 sections`);
     }
