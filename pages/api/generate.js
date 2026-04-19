@@ -384,12 +384,13 @@ export default async function handler(req, res) {
   try {
     let generatedImageURL = null;
     
-    if (hasShopifyConfig) {
-      console.log("Generating and uploading AI image to Shopify...");
-      generatedImageURL = await generateAndUploadImage(keywords, shopifyShop, shopifyToken);
-    } else {
-      console.log("Shopify not configured, skipping image upload...");
-    }
+    // Image generation disabled due to Gemini API quota limits
+    // if (hasShopifyConfig) {
+    //   console.log("Generating and uploading AI image to Shopify...");
+    //   generatedImageURL = await generateAndUploadImage(keywords, shopifyShop, shopifyToken);
+    // } else {
+    //   console.log("Shopify not configured, skipping image upload...");
+    // }
     
     console.log("Sending request to OpenAI...");
     const prompt = `
