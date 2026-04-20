@@ -1,7 +1,7 @@
 # Blog Scheduling Setup Guide
 
 ## Overview
-This system allows you to automatically generate and post blogs to Shopify **3 times per day** (or any custom times you specify). You control which keywords are used and can stop the scheduling at any time.
+This system allows you to automatically generate and post blogs to Shopify **6 times per day** at fixed times: **6:00 AM, 10:00 AM, 2:00 PM, 6:00 PM, 10:00 PM, and 2:00 AM (Philippines Time)**. You can stop the scheduling at any time.
 
 ---
 
@@ -23,31 +23,20 @@ This system allows you to automatically generate and post blogs to Shopify **3 t
 **Request Body:**
 ```json
 {
-  "keywords": ["best running shoes", "shoe care tips", "custom sneakers"],
-  "times": ["08:00", "12:00", "18:00"],
-  "shopifyToken": "your_shopify_token",
-  "shopifyShop": "your-shop.myshopify.com",
-  "shopifyBlogId": "your_blog_id"
+  "keywords": ["best running shoes", "shoe care tips", "custom sneakers"]
 }
 ```
 
 **Parameters:**
-- `keywords` (required): Array of keywords to generate blogs from
-- `times` (optional): Array of times in HH:MM format (24-hour). Default: `["08:00", "12:00", "18:00"]`
-- `shopifyToken` (optional): Shopify API token (can use env variable instead)
-- `shopifyShop` (optional): Shopify shop URL
-- `shopifyBlogId` (optional): Shopify blog ID
+- `keywords` (optional): Array of keywords to generate blogs from (auto-generated if not provided)
+- Times are fixed at: **06:00, 10:00, 14:00, 18:00, 22:00, 02:00** (Philippines Time UTC+8)
 
 **Example with cURL:**
 ```bash
 curl -X POST http://localhost:3000/api/schedule-posting \
   -H "Content-Type: application/json" \
   -d '{
-    "keywords": ["best running shoes", "shoe care tips"],
-    "times": ["08:00", "14:00", "20:00"],
-    "shopifyToken": "shpat_xxxxx",
-    "shopifyShop": "myshop.myshopify.com",
-    "shopifyBlogId": "12345"
+    "keywords": ["best running shoes", "shoe care tips"]
   }'
 ```
 
@@ -57,7 +46,7 @@ curl -X POST http://localhost:3000/api/schedule-posting \
   "message": "Scheduled posting job created successfully",
   "jobId": "schedule-1712000000000",
   "keywords": ["best running shoes", "shoe care tips"],
-  "times": ["08:00", "14:00", "20:00"],
+  "times": ["06:00", "10:00", "14:00", "18:00", "22:00", "02:00"],
   "instructions": "Use the job ID to stop this job. Send a POST request to /api/stop-posting with the jobId."
 }
 ```

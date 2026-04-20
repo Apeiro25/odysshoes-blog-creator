@@ -156,7 +156,7 @@ export default async function handler(req, res) {
 
   const {
     keywords: providedKeywords,
-    times = ["06:00", "09:00", "12:00", "15:00", "18:00"], // Default: 6 AM, 9 AM, 12 PM, 3 PM, 6 PM
+    times = ["06:00", "10:00", "14:00", "18:00", "22:00", "02:00"], // Default: 6 AM, 10 AM, 2 PM, 6 PM, 10 PM, 2 AM
     shopifyToken,
     shopifyShop,
     shopifyBlogId,
@@ -194,7 +194,7 @@ export default async function handler(req, res) {
   }
 
   if (!times || !Array.isArray(times) || times.length === 0) {
-    return res.status(400).json({ error: "Times must be a non-empty array (e.g., ['08:00', '12:00', '18:00'])" });
+    return res.status(400).json({ error: "Times must be a non-empty array (e.g., ['06:00', '10:00', '14:00', '18:00', '22:00', '02:00'])" });
   }
 
   // Validate time format (HH:MM)

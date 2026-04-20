@@ -16,7 +16,7 @@ export default function Home() {
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyShop, setShopifyShop] = useState('');
   const [shopifyBlogId, setShopifyBlogId] = useState('');
-  const [scheduleTimes, setScheduleTimes] = useState('06:00,09:00,12:00,15:00,18:00');
+  const [scheduleTimes, setScheduleTimes] = useState('06:00,10:00,14:00,18:00,22:00,02:00');
   const [activeJobs, setActiveJobs] = useState([]);
   const [showActiveJobs, setShowActiveJobs] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -196,7 +196,7 @@ export default function Home() {
       }
 
       alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')} PHT${timezoneMessage}`);
-      setScheduleTimes('06:00,09:00,12:00,15:00,18:00');
+      setScheduleTimes('06:00,10:00,14:00,18:00,22:00,02:00');
       
       // Refresh active jobs list
       await fetchActiveJobs();
@@ -617,16 +617,44 @@ export default function Home() {
           {/* Schedule Times - Only shown in schedule mode */}
           {mode === 'schedule' && (
             <>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>Posting Times in Philippines Time (UTC+8)</label>
-              <input
-                type="text"
-                placeholder="HH:MM format, comma-separated (e.g., 06:00,09:00,12:00,15:00,18:00)"
-                value={scheduleTimes}
-                onChange={(e) => setScheduleTimes(e.target.value)}
-                style={{...inputStyle, fontFamily: 'monospace', fontSize: '12px'}}
-              />
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '13px', fontWeight: 'bold', color: '#666' }}>📅 Fixed Posting Schedule</label>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#e8f5e9',
+                border: '2px solid #28a745',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+              }}>
+                <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#2e7d32', marginBottom: '0.8rem' }}>⏰ Posts will be published at:</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.8rem' }}>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>06:00 AM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>6:00 AM PHT</p>
+                  </div>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>10:00 AM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>10:00 AM PHT</p>
+                  </div>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>2:00 PM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>14:00 (2 PM) PHT</p>
+                  </div>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>6:00 PM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>18:00 (6 PM) PHT</p>
+                  </div>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>10:00 PM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>22:00 (10 PM) PHT</p>
+                  </div>
+                  <div style={{ padding: '0.8rem', backgroundColor: '#fff', borderRadius: '6px', textAlign: 'center', border: '1px solid #28a745' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>2:00 AM</p>
+                    <p style={{ margin: '0.3rem 0 0 0', fontSize: '16px', fontWeight: 'bold', color: '#2e7d32' }}>02:00 (2 AM) PHT</p>
+                  </div>
+                </div>
+              </div>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                🌏 Times are in Philippines Time (UTC+8). Example: 09:00 = 9:00 AM PHT
+                🌏 All times are in Philippines Time (UTC+8). 6 blog posts will be published every day.
               </p>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem', fontStyle: 'italic' }}>
                 💡 Keywords will be automatically generated and checked against previously published blogs

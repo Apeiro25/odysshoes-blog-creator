@@ -1,65 +1,59 @@
-# 5 Daily Posts Configuration Guide
+# 6 Daily Posts Configuration Guide
 
 ## Overview
 
-Your blog automation system now supports posting **5 times per day** instead of 3. You can customize the exact times in the UI when setting up your scheduled posting jobs.
+Your blog automation system is configured to post **6 times per day** at fixed times. The posting schedule cannot be customized via the UI.
 
 ---
 
-## Default Posting Times
+## Fixed Posting Times
 
-The system comes with these default times:
+The system posts at these fixed times (Philippines Time - UTC+8):
 - **6:00 AM** (06:00)
-- **9:00 AM** (09:00)  
-- **12:00 PM** (12:00)
-- **3:00 PM** (15:00)
+- **10:00 AM** (10:00)  
+- **2:00 PM** (14:00)
 - **6:00 PM** (18:00)
+- **10:00 PM** (22:00)
+- **2:00 AM** (02:00)
 
 ---
 
-## How to Configure Custom Times
+## How the Posting Schedule Works
 
-### In the Web UI
+### Fixed Daily Cycle
 
-1. Go to your blog creator app
-2. Click on **"⏰ Schedule"** tab
-3. Enter your keywords (comma-separated)
-4. In the **"Posting Times"** field, enter 5 times in 24-hour format
+Every day, your system will post at these fixed times (Philippines Time):
 
-### Format: HH:MM,HH:MM,HH:MM,HH:MM,HH:MM
+1. **6:00 AM** → Generate & post blog #1
+2. **10:00 AM** → Generate & post blog #2
+3. **2:00 PM** → Generate & post blog #3
+4. **6:00 PM** → Generate & post blog #4
+5. **10:00 PM** → Generate & post blog #5
+6. **2:00 AM** → Generate & post blog #6
 
-Examples:
-```
-05:00,08:00,11:00,14:00,17:00     # 5 AM, 8 AM, 11 AM, 2 PM, 5 PM
-06:00,09:00,12:00,15:00,18:00     # Default times
-07:00,10:00,13:00,16:00,19:00     # 7 AM, 10 AM, 1 PM, 4 PM, 7 PM
-06:00,09:00,12:00,15:00,20:00     # 6 AM, 9 AM, 12 PM, 3 PM, 8 PM
-```
+**Total: 6 new blogs posted daily**
 
-### Important Rules
+### Keyword Rotation
 
-✅ **Use 24-hour format** (00:00 to 23:59)
-✅ **Comma-separated** with no spaces (or spaces are fine, they're trimmed)
-✅ **Exactly 5 times** (or any number you want - the system is flexible)
-✅ **Times in ascending order** (optional but recommended)
-
-❌ **Don't use 12-hour format** (e.g., 6:00 PM won't work)
-❌ **Don't use special characters** (only HH:MM and commas)
+- The system automatically selects keywords from your pool for each post
+- Keywords are rotated to prevent duplicates in the same schedule cycle
+- If all keywords are exhausted, the system can auto-generate new ones
+- All published blogs are logged and checked for duplicates
 
 ---
 
-## Example: Setting Up 5 Daily Posts
+## Setting Up Auto-Posting
 
 ### Step 1: Create Shopify Connection
 1. Go to **Settings** (gear icon)
 2. Enter your Shopify credentials
 3. Click **Save**
 
-### Step 2: Configure Times
+### Step 2: Start Auto-Posting
 1. Click **"⏰ Schedule"** tab
-2. Enter keywords: `running shoes, casual shoes, hiking shoes, athletic shoes, water shoes`
-3. Enter posting times: `06:00,09:00,12:00,15:00,18:00`
-4. Click **"🚀 Start Scheduler"**
+2. (Optional) Enter keywords or leave blank for auto-generation
+3. View the fixed posting schedule displayed on the screen
+4. Click **"🚀 Start Auto-Posting"**
 
 ### Step 3: Verify
 - A confirmation alert shows your job ID and posting times
@@ -68,25 +62,25 @@ Examples:
 
 ---
 
-## How It Works
+## Customizing Posting Times
 
-### Daily Cycle
+To use different posting times, you need to modify the code:
 
-Each day, your system will:
+### Option 1: Edit pages/api/schedule-posting.js
 
-1. **6:00 AM** → Pick random keyword → Generate & post blog #1
-2. **9:00 AM** → Pick different keyword → Generate & post blog #2
-3. **12:00 PM** → Pick different keyword → Generate & post blog #3
-4. **3:00 PM** → Pick different keyword → Generate & post blog #4
-5. **6:00 PM** → Pick different keyword → Generate & post blog #5
+Find this line:
+```javascript
+times = ["06:00", "10:00", "14:00", "18:00", "22:00", "02:00"]
+```
 
-**Total: 5 new blogs posted daily**
+Change it to your preferred times (24-hour format):
+```javascript
+times = ["06:00", "09:00", "12:00", "15:00", "18:00"]  // 5 times
+times = ["08:00", "12:00", "16:00", "20:00"]  // 4 times
+times = ["07:00", "13:00", "19:00", "01:00"]  // 4 times with overnight
+```
 
-### Keyword Rotation
-
-- The system prevents duplicate keywords being used
-- If all keywords are used, it auto-generates new ones using OpenAI
-- You can have unlimited blogs posted with automatic keyword generation
+Then redeploy the application.
 
 ---
 
@@ -95,28 +89,23 @@ Each day, your system will:
 ### For Content Consistency
 Post during hours your audience is most active:
 ```
-08:00,11:00,14:00,17:00,19:00    # Early morning, late evening
+08:00, 11:00, 14:00, 17:00, 20:00  # Peaks hours
 ```
 
 ### For SEO Distribution
-Spread posts throughout the day:
+Spread posts evenly throughout the day:
 ```
-06:00,09:00,12:00,15:00,18:00    # Evenly distributed
+06:00, 10:00, 14:00, 18:00, 22:00  # Evenly distributed
 ```
 
-### For Overnight Coverage (Asian/Europe expansion)
+### For Global Coverage (Asian/European audiences)
 ```
-00:00,06:00,12:00,18:00,22:00    # 24-hour coverage
+02:00, 08:00, 14:00, 20:00  # 24-hour rotation
 ```
 
 ---
 
-## Modifying Times While Running
-
-### To Change Posting Times
-
-1. **Stop the current job** by clicking the stop button
-2. **Note:** All published blogs are preserved and won't be deleted
+## Modifying the Active Job
 3. Create a new job with different times
 4. Old job is archived but remains in database for reference
 

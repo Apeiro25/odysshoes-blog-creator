@@ -186,12 +186,12 @@ We create <a href="/products/running-shoes">premium running shoes</a>.</p>
 ### **Schedule Auto-Posting (Simple)**
 ```
 User: Clicks "⏰ Schedule" tab
-      Sets times: "06:00,09:00,12:00,15:00,18:00"
+      Views fixed times: "06:00, 10:00, 14:00, 18:00, 22:00, 02:00"
       Clicks "🚀 Start Auto-Posting"
          ↓
 System: Auto-generates 20 keywords (checking for duplicates)
         Creates job with keywords
-        Schedules 5 daily posts
+        Schedules 6 daily posts at fixed times
          ↓
 User: Job starts posting at specified times
       Each blog:
