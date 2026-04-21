@@ -47,7 +47,11 @@ function normalizeBlogContent(blog) {
   // Ensure basic fields exist
   blog.title = blog.title || "Untitled Article";
   blog.metaDescription = blog.metaDescription || blog.title;
-  blog.intro = blog.intro || "";
+  // Ensure intro is a string, never an object
+  blog.intro = typeof blog.intro === 'string' ? blog.intro : "";
+  if (!blog.intro || typeof blog.intro !== 'string') {
+    blog.intro = "";
+  }
   
   // Ensure mainContent is valid array
   if (!blog.mainContent || !Array.isArray(blog.mainContent)) {
@@ -102,7 +106,11 @@ function normalizeBlogContent(blog) {
     blog.outro = { heading: "Conclusion", paragraph: "Thank you for reading this guide." };
   } else {
     blog.outro.heading = blog.outro.heading || "Conclusion";
-    blog.outro.paragraph = blog.outro.paragraph || "Thank you for reading this guide.";
+    // Ensure paragraph is a string, never an object
+    blog.outro.paragraph = typeof blog.outro.paragraph === 'string' ? blog.outro.paragraph : "Thank you for reading this guide.";
+    if (!blog.outro.paragraph || typeof blog.outro.paragraph !== 'string') {
+      blog.outro.paragraph = "Thank you for reading this guide.";
+    }
   }
 
   // Ensure faqs is a valid array
@@ -111,8 +119,8 @@ function normalizeBlogContent(blog) {
   }
 
   blog.faqs = blog.faqs.map(faq => ({
-    question: faq.question || "Question?",
-    answer: faq.answer || "Answer not available."
+    question: typeof faq?.question === 'string' ? faq.question : "Question?",
+    answer: typeof faq?.answer === 'string' ? faq.answer : "Answer not available."
   }));
 
   return blog;
@@ -491,20 +499,20 @@ Return ONLY the JSON object - no additional text, markdown, or explanations.`;
       }
       
       // Add intro words
-      if (blog.intro) {
+      if (blog.intro && typeof blog.intro === 'string') {
         totalWords += blog.intro.split(/\s+/).length;
       }
       
       // Add outro words
-      if (blog.outro && blog.outro.paragraph) {
+      if (blog.outro && typeof blog.outro.paragraph === 'string') {
         totalWords += blog.outro.paragraph.split(/\s+/).length;
       }
       
       // Add FAQ words
       if (blog.faqs && Array.isArray(blog.faqs)) {
         blog.faqs.forEach((faq) => {
-          if (faq.question) totalWords += faq.question.split(/\s+/).length;
-          if (faq.answer) totalWords += faq.answer.split(/\s+/).length;
+          if (typeof faq.question === 'string') totalWords += faq.question.split(/\s+/).length;
+          if (typeof faq.answer === 'string') totalWords += faq.answer.split(/\s+/).length;
         });
       }
       
