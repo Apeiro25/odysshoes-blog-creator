@@ -16,7 +16,7 @@ export default function Home() {
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyShop, setShopifyShop] = useState('');
   const [shopifyBlogId, setShopifyBlogId] = useState('');
-  const [scheduleTimes, setScheduleTimes] = useState('06:00,10:00,14:00,18:00,22:00,02:00');
+  const [scheduleTimes, setScheduleTimes] = useState('02:00,06:00,10:00,14:00,18:00,22:00');
   const [activeJobs, setActiveJobs] = useState([]);
   const [showActiveJobs, setShowActiveJobs] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState('');
@@ -189,14 +189,14 @@ export default function Home() {
       // Build timezone info message
       let timezoneMessage = '';
       if (data.scheduledTimesInfo && data.scheduledTimesInfo.length > 0) {
-        timezoneMessage = '\n\n🌏 Posting Schedule (Timezone Conversion):\n';
+        timezoneMessage = '\n\n🌏 Posting Schedule (Asia/Manila):\n';
         data.scheduledTimesInfo.forEach((info, idx) => {
-          timezoneMessage += `  ${idx + 1}. ${info.phtTime} PHT → ${info.serverTime} ${info.serverTimezone}\n`;
+          timezoneMessage += `  ${idx + 1}. ${info.scheduledTime} ${info.timeZone}\n`;
         });
       }
 
-      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')} PHT${timezoneMessage}`);
-      setScheduleTimes('06:00,10:00,14:00,18:00,22:00,02:00');
+      alert(`✓ Scheduled! Job ID: ${data.jobId}\n\n📝 Auto-generated ${keywordCount} keywords!\n${duplicateCount > 0 ? `⛔ Skipped ${duplicateCount} duplicates\n` : ''}${linkedCount > 0 ? `🔗 Ready to link to ${linkedCount} existing blogs\n` : ''}⏰ Blogs will post at: ${timeList.join(', ')} Asia/Manila${timezoneMessage}`);
+      setScheduleTimes('02:00,06:00,10:00,14:00,18:00,22:00');
       
       // Refresh active jobs list
       await fetchActiveJobs();

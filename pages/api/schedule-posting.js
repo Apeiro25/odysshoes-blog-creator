@@ -7,31 +7,8 @@ import { generateKeywords } from "../../utils/keywordGenerator.js";
 import { checkForDuplicates } from "../../utils/duplicateChecker.js";
 import { fetchPublishedBlogs } from "../../utils/odysshoesBlogFetcher.js";
 
-// Philippines timezone offset (UTC+8)
-const PHT_OFFSET = 8;
-
-// Get current server timezone offset (in hours)
-function getServerTimezoneOffsetHours() {
-  const now = new Date();
-  // getTimezoneOffset returns minutes, negative for UTC+ zones
-  // We negate it and divide by 60 to get hours (positive for UTC+ zones)
-  return -now.getTimezoneOffset() / 60;
-}
-
-// Convert Philippines time to server local time
-function convertPHTToServerTime(phtHours, phtMinutes) {
-  // Step 1: Create a UTC date at the PHT input time minus 8 hours
-  const now = new Date();
-  const utcTime = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), phtHours - PHT_OFFSET, phtMinutes, 0);
-  
-  // Step 2: Create a regular Date object (which converts to server local time)
-  const localDate = new Date(utcTime);
-  
-  return {
-    hours: localDate.getHours(),
-    minutes: localDate.getMinutes(),
-  };
-}
+const SCHEDULE_TIMEZONE = "Asia/Manila";
+const DEFAULT_SCHEDULE_TIMES = ["02:00", "06:00", "10:00", "14:00", "18:00", "22:00"];
 
 // Flag to track if restoration has been attempted
 let hasAttemptedRestoration = false;
@@ -156,7 +133,7 @@ export default async function handler(req, res) {
 
   const {
     keywords: providedKeywords,
-    times = ["06:00", "10:00", "14:00", "18:00", "22:00", "02:00"], // Default: 6 AM, 10 AM, 2 PM, 6 PM, 10 PM, 2 AM
+    times = DEFAULT_SCHEDULE_TIMES,
     shopifyToken,
     shopifyShop,
     shopifyBlogId,
@@ -205,6 +182,10 @@ export default async function handler(req, res) {
     }
   }
 
+  if (times.length !== 6) {
+    return res.status(400).json({ error: "Please provide exactly 6 posting times per day." });
+  }
+
   // Generate unique job ID
   const jobId = `schedule-${Date.now()}`;
 
@@ -224,19 +205,10 @@ export default async function handler(req, res) {
     const scheduledTasks = [];
 
     for (const time of times) {
-      // Parse time (HH:MM) - assumed to be in Philippines Time (UTC+8)
-      const [phtHours, phtMinutes] = time.split(":").map(Number);
+      const [hours, minutes] = time.split(":").map(Number);
+      const cronExpression = `${minutes} ${hours} * * *`;
 
-      // Convert Philippines time to server local time
-      const { hours: localHours, minutes: localMinutes } = convertPHTToServerTime(phtHours, phtMinutes);
-
-      // Create cron expression using server local time
-      const cronExpression = `${localMinutes} ${localHours} * * *`;
-
-      const serverTimezoneOffset = getServerTimezoneOffsetHours();
-      const serverTimezone = serverTimezoneOffset >= 0 ? `UTC+${serverTimezoneOffset}` : `UTC${serverTimezoneOffset}`;
-      
-      console.log(`Scheduling for PHT ${String(phtHours).padStart(2, '0')}:${String(phtMinutes).padStart(2, '0')} → Server local (${serverTimezone}): ${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')} [cron: ${cronExpression}]`);
+      console.log(`Scheduling for ${time} in ${SCHEDULE_TIMEZONE} [cron: ${cronExpression}]`);
 
       // Schedule task
       const task = cron.schedule(cronExpression, async () => {
@@ -283,7 +255,7 @@ export default async function handler(req, res) {
           shopifyBlogId,
           jobId
         );
-      });
+      }, { timezone: SCHEDULE_TIMEZONE });
 
       scheduledTasks.push({ time, task });
     }
@@ -301,35 +273,27 @@ export default async function handler(req, res) {
 
     console.log(`Scheduled posting job created: ${jobId}`);
     console.log(`Keywords: ${keywords.join(", ")}`);
-    console.log(`Posting times (Philippines Time - UTC+8): ${times.join(", ")}`);
+    console.log(`Posting times (${SCHEDULE_TIMEZONE}): ${times.join(", ")}`);
 
-    // Prepare response with detailed timezone information
-    const scheduledTimesInfo = times.map(time => {
-      const [phtHours, phtMinutes] = time.split(":").map(Number);
-      const { hours: localHours, minutes: localMinutes } = convertPHTToServerTime(phtHours, phtMinutes);
-      const serverTimezoneOffset = getServerTimezoneOffsetHours();
-      const serverTimezone = serverTimezoneOffset >= 0 ? `UTC+${serverTimezoneOffset}` : `UTC${serverTimezoneOffset}`;
-      
-      return {
-        phtTime: time,
-        serverTime: `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`,
-        serverTimezone,
-      };
-    });
+    // Prepare response with timezone information
+    const scheduledTimesInfo = times.map(time => ({
+      scheduledTime: time,
+      timeZone: SCHEDULE_TIMEZONE,
+    }));
 
     return res.status(201).json({
       message: "Scheduled posting job created successfully",
       jobId,
       keywords,
       times,
-      timeZone: "Philippines Time (UTC+8)",
+      timeZone: SCHEDULE_TIMEZONE,
       scheduledTimesInfo,
       odysshoesIntegration: {
         publishedBlogsCount: publishedOdysshoesBlogs.length,
         linkedBlogsAvailable: Math.round(publishedOdysshoesBlogs.length * 0.6), // Estimate ~60% will have phrase matches
         duplicatesSkipped: 0,
       },
-      instructions: "Times are scheduled in Philippines Time (UTC+8). Use the job ID to stop this job. Send a POST request to /api/stop-posting with the jobId.",
+      instructions: `Times are scheduled in ${SCHEDULE_TIMEZONE}. Use the job ID to stop this job. Send a POST request to /api/stop-posting with the jobId.`,
     });
   } catch (error) {
     console.error("Error creating scheduled posting job:", error);
